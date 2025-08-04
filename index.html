@@ -70,7 +70,7 @@
 		let golfFlagState = 'hidden'; // Manages the current animation state
     	let golfFlagAnimationStartTime = 0; // Tracks when an animation starts
 	    let golfFlagVisibleUntil = 0; // Tracks when the flag should start disappearing
-    	const FLAG_ANIMATE_DURATION = 250; // A quick 0.25-second animation
+    	const FLAG_ANIMATE_DURATION = 550; // A quick 0.25-second animation
 	    const FLAG_VISIBLE_DURATION = 5000; // 5 seconds of visibility
 		
 		const myBigAssDiv = document.getElementById('bigcontainer1');
@@ -147,7 +147,8 @@
     					let { chatter_user_name , chatter_user_id , message } = event;		
 							console.log(`${chatter_user_name}: ${message.text}`);
 							startEvent('golf', `${chatter_user_name}`)
-							if(`${message.text}` == '!tree'){makeChattersTree(chatter_user_id, chatter_user_name);}	
+							if(`${message.text}` == '!tree'){makeChattersTree(chatter_user_id, chatter_user_name);}
+							if(`${message.text}` == '!plant'){makeChattersTree(chatter_user_id, chatter_user_name);}	
 							if(`${message.text}` == '!flag'){showGolfFlag();}
 							if(`${message.text}` == '!meteor'){startEvent('meteor')}
 							if(`${message.text}` == '!lightning'){startEvent('lightning')}
@@ -160,7 +161,7 @@
 							 }
 							}
 							if(`${message.text}` == '!nbh'){
-							for (let i = 0; i < 6; i++) {
+							for (let i = 0; i < 69; i++) {
 							  setTimeout(() => {
 								startEvent('meteor');
 							  }, 300 * i); 
@@ -234,6 +235,7 @@
 							for (let i = 0; i < 69; i++) {
 							  setTimeout(() => {
 								startEvent('golf', 'C.R.O.');
+								startEvent('creature');
 							  }, 400 * i); 
 							 }
 							 for (let i = 0; i < 69; i++) {
@@ -250,6 +252,7 @@
 							 }
 							}
 							if(`${message.text}` == '!golf'){
+							startEvent('creature');
 							for (let i = 0; i < 15; i++) {
 							  setTimeout(() => {
 								startEvent('golf', `${chatter_user_name}`);
@@ -2188,7 +2191,7 @@
 		const progress = 1 - (e.life / 240);
         const scale = Math.sin(progress * Math.PI) * 1.2;
         const alpha = Math.sin(progress * Math.PI);
-        const message = `${e.name}`+'\n\n got a Hole in ONE!';
+        const message = `${e.name}`+' got a Hole in ONE!';
         
         ctx.save();
         ctx.translate(canvas.width/2, canvas.height/2);
