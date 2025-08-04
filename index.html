@@ -497,7 +497,7 @@
         landscapeCanvas.width = canvas.width;
         landscapeCanvas.height = canvas.height;
         landCtx = landscapeCanvas.getContext('2d');
-        const landscapeHeight = canvas.height / 13;
+        const landscapeHeight = canvas.height / 15;
         const startY = canvas.height - landscapeHeight;
         const hills = Array.from({length: 4}, () => ({ amp: globalRandom() * landscapeHeight / 3, freq: globalRandom() * 0.01 + 0.005, phase: globalRandom() * Math.PI * 2 }));
         for (let x = 0; x < canvas.width; x++) {
@@ -1961,6 +1961,8 @@
     }
 	
     function updateAndDrawGolfer(golfer) {
+		const scale = 2;
+		
         // Update the golfer's ground position
         golfer.screenY = landscapeHeightMap[Math.round(golfer.x)] || golfer.screenY;
         golfer.animation_timer++;
@@ -1979,7 +1981,7 @@
                 golfer.ballStruck = true;
                 
                 const ballOriginX = golfer.x;
-                const ballOriginY = golfer.screenY - 5; // Start at the golfer's feet
+                const ballOriginY = golfer.screenY - (5 * scale);
 
                 // Aiming logic
                 const dx = golfHole.x - ballOriginX;
@@ -2030,32 +2032,32 @@
         let frame = 'idle';
         if(golfer.stage === 'swinging') frame = 'swing';
         
-        ctx.fillStyle = golfer.shirtColor; ctx.fillRect(-3, -25, 8, 12);
-        ctx.fillStyle = '#ffdbac'; ctx.fillRect(-2, -31, 6, 6);
-        ctx.fillStyle = '#555'; ctx.fillRect(-3, -13, 4, 13); ctx.fillRect(2, -13, 4, 13);
+        ctx.fillStyle = golfer.shirtColor; ctx.fillRect(-3 * scale, -25 * scale, 8 * scale, 12 * scale);
+        ctx.fillStyle = '#ffdbac'; ctx.fillRect(-2 * scale, -31 * scale, 6 * scale, 6 * scale);
+        ctx.fillStyle = '#555'; ctx.fillRect(-3 * scale, -13 * scale, 4 * scale, 13 * scale); ctx.fillRect(2 * scale, -13 * scale, 4 * scale, 13 * scale);
         
         ctx.save();
-        ctx.translate(2, -22);
+        ctx.translate(2 * scale, -22 * scale);
         if (frame === 'swing') {
             const swingProgress = Math.sin((golfer.animation_timer / 40) * Math.PI);
             ctx.rotate(swingProgress * 2 - 1);
         }
-        ctx.fillStyle = '#ffdbac'; ctx.fillRect(0, 0, 2, 8);
-        ctx.fillStyle = '#aaa'; ctx.fillRect(0, 8, 2, 18);
-        ctx.fillStyle = '#888'; ctx.fillRect(-2, 26, 6, 3);
+        ctx.fillStyle = '#ffdbac'; ctx.fillRect(0, 0, 2 * scale, 8 * scale);
+        ctx.fillStyle = '#aaa'; ctx.fillRect(0, 8 * scale, 2 * scale, 18 * scale);
+        ctx.fillStyle = '#888'; ctx.fillRect(-2 * scale, 26 * scale, 6 * scale, 3 * scale);
         ctx.restore();
         
         // --- Draw the Golfer's Name ---
 		ctx.save();
 		ctx.scale(direction, 1); // Apply the scale again to un-flip the text
 		
-		ctx.font = '17px "Tiny5", sans-serif';
+		ctx.font = `${17 * scale}px "Tiny5", sans-serif`;
 		ctx.textAlign = 'center';
 		ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
 		// We multiply the shadow offset by the direction to move it correctly
-		ctx.fillText(golfer.name, 1 * direction, -38);
+		ctx.fillText(golfer.name, 1 * direction, -38 * scale);
 		ctx.fillStyle = 'white';
-		ctx.fillText(golfer.name, 0, -39);
+		ctx.fillText(golfer.name, 0, -39 * scale);
 		
 		ctx.restore(); // Restore from the text-un-flipping scale
 		
