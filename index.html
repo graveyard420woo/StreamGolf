@@ -2202,6 +2202,8 @@
 //
     function updateAndDrawHoleInOne(e) {
         if(e.life === 239) {
+			const message = `${e.name}`+' got a Hole in ONE!';
+			sendTwitchChatMessage(my_user_id, message);
             for(let i=0; i < 50; i++) {
                 const angle = globalRandom() * Math.PI * 2;
                 const speed = globalRandom() * 3 + 1;
@@ -2230,7 +2232,6 @@
         const scale = Math.sin(progress * Math.PI) * 1.2;
         const alpha = Math.sin(progress * Math.PI);
         const message = `${e.name}`+' got a Hole in ONE!';
-		sendTwitchChatMessage(my_user_id, message);
         
         ctx.save();
         ctx.translate(canvas.width/2, canvas.height/2);
