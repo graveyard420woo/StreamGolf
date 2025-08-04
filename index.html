@@ -67,9 +67,11 @@
         var my_user_id = '';
 		var chattersColor = '';
 		let previousChatters = [];
-		let golfFlagTimer = 0; // Will store the timestamp when the flag should disappear
-    	const FLAG_VISIBLE_DURATION = 5000; // 5 seconds in milliseconds
-	    const FLAG_ANIMATE_AWAY_DURATION = 1000; // 1 second animation
+		let golfFlagState = 'hidden'; // Manages the current animation state
+    	let golfFlagAnimationStartTime = 0; // Tracks when an animation starts
+	    let golfFlagVisibleUntil = 0; // Tracks when the flag should start disappearing
+    	const FLAG_ANIMATE_DURATION = 250; // A quick 0.25-second animation
+	    const FLAG_VISIBLE_DURATION = 5000; // 5 seconds of visibility
 		
 		const myBigAssDiv = document.getElementById('bigcontainer1');
 		  setTimeout(() => {
@@ -1802,51 +1804,95 @@
     }
 
 	function showGolfFlag() {
-        console.log("Showing the golf flag for 5 seconds.");
-        // Set the timer to the current time plus the desired duration
-        golfFlagTimer = Date.now() + FLAG_VISIBLE_DURATION;
+        const now = Date.now();
+
+        // If the flag is already visible, just extend its timer.
+        if (golfFlagState === 'visible') {
+            golfFlagVisibleUntil = now + FLAG_VISIBLE_DURATION;
+            console.log("Flag timer extended.");
+        }
+        // Otherwise, start the 'animate-in' sequence.
+        else if (golfFlagState === 'hidden' || golfFlagState === 'animating-out') {
+            golfFlagState = 'animating-in';
+            golfFlagAnimationStartTime = now;
+            console.log("Starting flag 'animate-in' sequence.");
+        }
     }
 	
     function updateAndDrawGolfFlag(time) {
-        // If the timer has expired, don't draw anything.
-        if (Date.now() > golfFlagTimer) {
+        // If the flag is hidden, do nothing.
+        if (golfFlagState === 'hidden') {
             return;
         }
 
         if (!golfHole) return;
 
+        // --- Basic Pole and Flag Properties ---
         const poleHeight = 35;
         const poleX = golfHole.x;
         const poleTopY = golfHole.y - poleHeight;
+        const flagWidth = 12;
+        const flagHeight = 8;
+        const totalPixels = flagWidth * flagHeight;
+        const now = Date.now();
 
-        // --- Animation Logic ---
-        const timeRemaining = golfFlagTimer - Date.now();
-        let flagWidth = 12;
+        // --- State Machine & Animation Logic ---
+        let pixelsToDraw = 0;
 
-        // If we are in the "animate away" window (the last second)
-        if (timeRemaining < FLAG_ANIMATE_AWAY_DURATION) {
-            // Calculate a progress value from 0.0 (start of animation) to 1.0 (end)
-            const animationProgress = 1.0 - (timeRemaining / FLAG_ANIMATE_AWAY_DURATION);
-            // Shrink the flag's width based on the progress
-            flagWidth *= (1 - animationProgress);
+        switch (golfFlagState) {
+            case 'animating-in':
+                const inProgress = (now - golfFlagAnimationStartTime) / FLAG_ANIMATE_DURATION;
+                pixelsToDraw = Math.floor(Math.min(inProgress, 1) * totalPixels);
+
+                if (inProgress >= 1) {
+                    golfFlagState = 'visible';
+                    golfFlagVisibleUntil = now + FLAG_VISIBLE_DURATION;
+                }
+                break;
+
+            case 'visible':
+                pixelsToDraw = totalPixels; // Draw all pixels
+                if (now > golfFlagVisibleUntil) {
+                    golfFlagState = 'animating-out';
+                    golfFlagAnimationStartTime = now;
+                }
+                break;
+
+            case 'animating-out':
+                const outProgress = (now - golfFlagAnimationStartTime) / FLAG_ANIMATE_DURATION;
+                pixelsToDraw = Math.floor((1 - Math.min(outProgress, 1)) * totalPixels);
+
+                if (outProgress >= 1) {
+                    golfFlagState = 'hidden';
+                }
+                break;
         }
-        // --- End of Animation Logic ---
 
-        // Draw the pole (this is always visible as long as the timer is active)
+        // Don't continue if there's nothing to draw
+        if (pixelsToDraw <= 0) {
+            return;
+        }
+
+        // --- Drawing Logic ---
+
+        // Draw the pole first
         ctx.fillStyle = '#888888';
         ctx.fillRect(poleX + 1, poleTopY, 1, poleHeight);
         ctx.fillStyle = '#cccccc';
         ctx.fillRect(poleX, poleTopY, 1, poleHeight);
 
-        // Draw the Flag
-        const flagHeight = 8;
+        // Draw the flag pixel by pixel, from the bottom up
         const flagColor = '#ec008c';
         const shadowColor = '#b41e8e';
         const waveAmplitude = 2.5;
+        let pixelCounter = 0;
 
-        // The drawing loop now uses the potentially smaller 'flagWidth'
-        for (let i = 0; i < flagWidth; i++) {
-            for (let j = 0; j < flagHeight; j++) {
+        for (let j = flagHeight - 1; j >= 0; j--) { // Loop from bottom row to top
+            for (let i = 0; i < flagWidth; i++) { // Loop from left to right
+                if (pixelCounter >= pixelsToDraw) {
+                    return; // Stop drawing if we've reached the limit for this frame
+                }
+
                 const waveOffset = Math.sin((time / 300) + (i / 3)) * waveAmplitude;
                 ctx.fillStyle = (i % 2 === j % 2) ? flagColor : shadowColor;
 
@@ -1856,10 +1902,11 @@
                     1,
                     1
                 );
+                pixelCounter++;
             }
         }
     }
-
+	
     function updateAndDrawGolfer(golfer) {
         // Update the golfer's ground position
         golfer.screenY = landscapeHeightMap[Math.round(golfer.x)] || golfer.screenY;
