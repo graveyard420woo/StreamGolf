@@ -241,7 +241,7 @@ input[type="button"], button {
 
 #twitch-text{
     color: #fff;
-    margin-left: 3px;
+    margin-left: 5px;
     margin-right: 1px;
     font-size: 18px;
     font-weight: 300;
@@ -249,9 +249,9 @@ input[type="button"], button {
 
 #gy-text{
     color: #fff;
-    margin-left: 7px;
+    margin-left: 3px;
     margin-right: 1px;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 300;
 }
 
