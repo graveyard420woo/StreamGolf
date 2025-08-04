@@ -1,6 +1,7 @@
+<img width="250" height="162" alt="sg" src="https://github.com/user-attachments/assets/762296c0-7ecc-4811-9802-358e8aa2e09b" />
 
-This is a dynamic<img width="250" height="162" alt="sg" src="https://github.com/user-attachments/assets/762296c0-7ecc-4811-9802-358e8aa2e09b" />
- overlay that creates a random, procedural golf course landscape to be played by everyone in chat on your stream. 
+
+This is a dynamic overlay that creates a random, procedural golf course landscape to be played by everyone in chat on your stream. 
 Why not play golf while you're also streaming, right!? 
 Add it as a full screen (1920x1080) browser source. 
 
