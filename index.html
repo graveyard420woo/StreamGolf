@@ -1961,7 +1961,7 @@
     }
 	
     function updateAndDrawGolfer(golfer) {
-		const scale = 2;
+		const scale = (Math.random() * 1 + 1).toFixed(1) * 1;
 		
         // Update the golfer's ground position
         golfer.screenY = landscapeHeightMap[Math.round(golfer.x)] || golfer.screenY;
@@ -2051,7 +2051,8 @@
 		ctx.save();
 		ctx.scale(direction, 1); // Apply the scale again to un-flip the text
 		
-		ctx.font = `${17 * scale}px "Tiny5", sans-serif`;
+		//ctx.font = `${17 * scale}px "Tiny5", sans-serif`;
+		ctx.font = '17px "Tiny5", sans-serif';
 		ctx.textAlign = 'center';
 		ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
 		// We multiply the shadow offset by the direction to move it correctly
