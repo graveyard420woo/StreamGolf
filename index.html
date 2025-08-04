@@ -1932,14 +1932,27 @@
             }
             for(const creature of activeCreatures){
                 const dist = Math.hypot(ball.x - creature.x, ball.y - creature.screenY);
-                if(dist < 10) { // A small 10px radius for creatures
-                    ball.vx *= -0.5 + (globalRandom() - 0.5) * 0.4;
-                    ball.vy *= 0.5;
-                    ball.bounces++; // A hit counts as a bounce
+                
+                // Check for collision and make sure the creature isn't already in a temporary speed boost
+                if(dist < 10 && !creature.isSpedUp) { 
                     
-                    // Make the creature run away when hit
-                    creature.state = 'leaving';
-                    creature.speed *= 1.5; 
+                    // --- Ball Physics: Bounce in a random direction ---
+                    const bounceSpeed = Math.hypot(ball.vx, ball.vy) * 0.7; // Keep some momentum, but dampen it
+                    const randomAngle = globalRandom() * Math.PI * 2; // Get a completely random angle
+                    ball.vx = Math.cos(randomAngle) * bounceSpeed;
+                    ball.vy = Math.sin(randomAngle) * bounceSpeed;
+                    ball.bounces++;
+
+                    // --- Creature Reaction: Temporary speed boost ---
+                    creature.isSpedUp = true; // A flag to prevent multiple hits from stacking speed boosts
+                    const originalSpeed = creature.speed;
+                    creature.speed *= 2.5; // Give it a significant, but short, burst of speed
+
+                    // Set a timer to return the creature to its normal speed after half a second
+                    setTimeout(() => {
+                        creature.speed = originalSpeed;
+                        creature.isSpedUp = false; // Reset the flag so it can be hit again
+                    }, 500); // 500 milliseconds = 0.5 seconds
                 }
             }
         }
