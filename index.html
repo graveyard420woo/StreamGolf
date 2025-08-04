@@ -67,17 +67,17 @@
         var my_user_id = '';
 		var chattersColor = '';
 		let previousChatters = [];
-		let golfFlagState = 'hidden'; // Manages the current animation state
-    	let golfFlagAnimationStartTime = 0; // Tracks when an animation starts
-	    let golfFlagVisibleUntil = 0; // Tracks when the flag should start disappearing
-    	const FLAG_ANIMATE_DURATION = 550; // A quick 0.25-second animation
-	    const FLAG_VISIBLE_DURATION = 5000; // 5 seconds of visibility
+		let golfFlagState = 'hidden'; 
+    	let golfFlagAnimationStartTime = 0; 
+	    let golfFlagVisibleUntil = 0; 
+    	const FLAG_ANIMATE_DURATION = 560; 
+	    const FLAG_VISIBLE_DURATION = 5000; 
 		
 		const myBigAssDiv = document.getElementById('bigcontainer1');
 		  setTimeout(() => {
 			myBigAssDiv.classList.remove('initial-fade');
 			myBigAssDiv.classList.add('visible-fade');
-		  }, 1000); // 1000 milliseconds = 1 second
+		  }, 1000);
 		
 		document.getElementById("plant-list-container").style.display = "none";
 		document.getElementById("ui-container").style.display = "none";
@@ -134,10 +134,9 @@
                         session_id = id;
                         my_user_id = resp.data[0].id;
                         requestHooks(resp.data[0].id, my_user_id);	
-						//getStuffNow(my_user_id);				
-						/*setInterval(() => {
+						setInterval(() => {
 							getStuffNow(my_user_id)
-						}, 12000); // A small delay	*/						
+						}, 12000); // A 12 second chat check delay							
                     });
                     socket_space.on('session_keepalive', () => {
                         document.getElementById('keepalive').textContent = new Date();
@@ -457,7 +456,7 @@
     const seasons = ['spring', 'summer', 'autumn', 'winter'];
     let currentSeason = 'summer';
 
-    // ## 2. ISOMETRIC & COLOR ENGINES ##
+    // ## ISOMETRIC & COLOR ENGINES ##
     const ISO_ANGLE = Math.atan(0.5);
     const toScreen = (x, y, z = 0) => ({ x: (x - y) * Math.cos(ISO_ANGLE), y: (x + y) * Math.sin(ISO_ANGLE) - z });
 
@@ -487,18 +486,18 @@
         };
     };
     
-    // ## 3. SEEDED RANDOMNESS ##
+    // ## SEEDED RANDOMNESS ##
     const createSeed = (str) => { let h = 1729033703; for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 3432918353); return (h << 13) | (h >>> 19); };
     const createSeededRandom = (seed) => () => { seed = Math.sin(seed) * 10000; return seed - Math.floor(seed); };
 
-    // ## 4. GENERATION ENGINES ##
+    // ## GENERATION ENGINES ##
     function generateLandscape() {
         landscapeCanvas = document.createElement('canvas');
         landscapeHeightMap = new Array(canvas.width).fill(0);
         landscapeCanvas.width = canvas.width;
         landscapeCanvas.height = canvas.height;
         landCtx = landscapeCanvas.getContext('2d');
-        const landscapeHeight = canvas.height / 15;
+        const landscapeHeight = canvas.height / 13;
         const startY = canvas.height - landscapeHeight;
         const hills = Array.from({length: 4}, () => ({ amp: globalRandom() * landscapeHeight / 3, freq: globalRandom() * 0.01 + 0.005, phase: globalRandom() * Math.PI * 2 }));
         for (let x = 0; x < canvas.width; x++) {
@@ -709,7 +708,7 @@
     SPECIES.generateAspen = SPECIES.generateTallSlender;
     SPECIES.generateBirch = SPECIES.generateTallSlender;
 
-    // ## 5. CORE APPLICATION LOGIC ##
+    // ## CORE APPLICATION LOGIC ##
 
     function initialize() {
         const seed = createSeed(Date.now().toString());
@@ -910,7 +909,7 @@
         requestAnimationFrame(animate);
     }
     
-    // ## 6. ALL OTHER FUNCTIONS ##
+    // ## ALL OTHER FUNCTIONS ##
 
     function updatePlantStatus(plant, time) {
         if (plant.status === 'growing') {
