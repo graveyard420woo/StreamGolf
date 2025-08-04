@@ -66,7 +66,10 @@
         var session_id = '';
         var my_user_id = '';
 		var chattersColor = '';
-		let previousChatters = [];	
+		let previousChatters = [];
+		let golfFlagTimer = 0; // Will store the timestamp when the flag should disappear
+    	const FLAG_VISIBLE_DURATION = 5000; // 5 seconds in milliseconds
+	    const FLAG_ANIMATE_AWAY_DURATION = 1000; // 1 second animation
 		
 		const myBigAssDiv = document.getElementById('bigcontainer1');
 		  setTimeout(() => {
@@ -143,6 +146,7 @@
 							console.log(`${chatter_user_name}: ${message.text}`);
 							startEvent('golf', `${chatter_user_name}`)
 							if(`${message.text}` == '!tree'){makeChattersTree(chatter_user_id, chatter_user_name);}	
+							if(`${message.text}` == '!flag'){showGolfFlag();}
 							if(`${message.text}` == '!meteor'){startEvent('meteor')}
 							if(`${message.text}` == '!lightning'){startEvent('lightning')}
 							if(`${message.text}` == '!wildfire'){startEvent('forestFire')}
@@ -767,7 +771,7 @@
         updateAndDrawSparkles();
         updateAndDrawPuddles();
 		
-		drawGolfFlag(time);
+		updateAndDrawGolfFlag(time);
 
         if (globalRandom() < 0.00005 && weather.type === 'none') {
             const weatherOptions = ['rain', 'snow', 'windy'];
@@ -1797,47 +1801,64 @@
         });
     }
 
-	function drawGolfFlag(time) {
-			if (!golfHole) return; // Don't do anything if the hole hasn't been created yet
+	function showGolfFlag() {
+        console.log("Showing the golf flag for 5 seconds.");
+        // Set the timer to the current time plus the desired duration
+        golfFlagTimer = Date.now() + FLAG_VISIBLE_DURATION;
+    }
 	
-			const poleHeight = 35;
-			const poleX = golfHole.x;
-			const poleTopY = golfHole.y - poleHeight;
-	
-			// Draw the pole (2px wide)
-			ctx.fillStyle = '#888888'; // Darker side for a 3D effect
-			ctx.fillRect(poleX + 1, poleTopY, 1, poleHeight);
-			ctx.fillStyle = '#cccccc'; // Lighter main color
-			ctx.fillRect(poleX, poleTopY, 1, poleHeight);
-	
-			// --- Draw the Flag ---
-			const flagWidth = 12;
-			const flagHeight = 8;
-			const flagColor = '#ec008c';   // A bright pink to match the UI
-			const shadowColor = '#b41e8e'; // A darker shade for texture
-			const waveAmplitude = 2.5;     // How much the flag will wave
-	
-			// We will draw the flag "pixel by pixel" to make it wave realistically
-			for (let i = 0; i < flagWidth; i++) { // Horizontal position along the flag
-				for (let j = 0; j < flagHeight; j++) { // Vertical position on the flag
-	
-					// The wave offset is calculated using sine, based on time and the pixel's position.
-					// This makes the flag ripple naturally.
-					const waveOffset = Math.sin((time / 300) + (i / 3)) * waveAmplitude;
-	
-					// Use an alternating color for a simple textured look
-					ctx.fillStyle = (i % 2 === j % 2) ? flagColor : shadowColor;
-	
-					// Draw the individual pixel of the flag
-					ctx.fillRect(
-						Math.round(poleX + 2 + i + waveOffset), // X position, attached to pole + wave
-						poleTopY + j,                          // Y position
-						1,                                     // Pixel width
-						1                                      // Pixel height
-					);
-				}
-			}
-		}
+    function updateAndDrawGolfFlag(time) {
+        // If the timer has expired, don't draw anything.
+        if (Date.now() > golfFlagTimer) {
+            return;
+        }
+
+        if (!golfHole) return;
+
+        const poleHeight = 35;
+        const poleX = golfHole.x;
+        const poleTopY = golfHole.y - poleHeight;
+
+        // --- Animation Logic ---
+        const timeRemaining = golfFlagTimer - Date.now();
+        let flagWidth = 12;
+
+        // If we are in the "animate away" window (the last second)
+        if (timeRemaining < FLAG_ANIMATE_AWAY_DURATION) {
+            // Calculate a progress value from 0.0 (start of animation) to 1.0 (end)
+            const animationProgress = 1.0 - (timeRemaining / FLAG_ANIMATE_AWAY_DURATION);
+            // Shrink the flag's width based on the progress
+            flagWidth *= (1 - animationProgress);
+        }
+        // --- End of Animation Logic ---
+
+        // Draw the pole (this is always visible as long as the timer is active)
+        ctx.fillStyle = '#888888';
+        ctx.fillRect(poleX + 1, poleTopY, 1, poleHeight);
+        ctx.fillStyle = '#cccccc';
+        ctx.fillRect(poleX, poleTopY, 1, poleHeight);
+
+        // Draw the Flag
+        const flagHeight = 8;
+        const flagColor = '#ec008c';
+        const shadowColor = '#b41e8e';
+        const waveAmplitude = 2.5;
+
+        // The drawing loop now uses the potentially smaller 'flagWidth'
+        for (let i = 0; i < flagWidth; i++) {
+            for (let j = 0; j < flagHeight; j++) {
+                const waveOffset = Math.sin((time / 300) + (i / 3)) * waveAmplitude;
+                ctx.fillStyle = (i % 2 === j % 2) ? flagColor : shadowColor;
+
+                ctx.fillRect(
+                    Math.round(poleX + 2 + i + waveOffset),
+                    poleTopY + j,
+                    1,
+                    1
+                );
+            }
+        }
+    }
 
     function updateAndDrawGolfer(golfer) {
         // Update the golfer's ground position
