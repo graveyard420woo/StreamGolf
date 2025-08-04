@@ -241,9 +241,9 @@ input[type="button"], button {
 
 #twitch-text{
     color: #fff;
-    margin-left: 7px;
-    margin-right: 2px;
-    font-size: 14px;
+    margin-left: 3px;
+    margin-right: 1px;
+    font-size: 18px;
     font-weight: 300;
 }
 
@@ -251,7 +251,7 @@ input[type="button"], button {
     color: #fff;
     margin-left: 7px;
     margin-right: 11px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 300;
 }
 
