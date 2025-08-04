@@ -385,6 +385,7 @@
 					chattersColor = `${resp.data[0].color}`					
 					if (resp.data[0].color) {
 						addPlant(theusername, chattersColor);
+						sendTwitchChatMessage('whoaa nelly');
 					} else {
 						addPlant(theusername, '#ED0080');
 					}
