@@ -463,7 +463,7 @@
         landscapeCanvas.width = canvas.width;
         landscapeCanvas.height = canvas.height;
         landCtx = landscapeCanvas.getContext('2d');
-        const landscapeHeight = canvas.height / 18;
+        const landscapeHeight = canvas.height / 15;
         const startY = canvas.height - landscapeHeight;
         const hills = Array.from({length: 4}, () => ({ amp: globalRandom() * landscapeHeight / 3, freq: globalRandom() * 0.01 + 0.005, phase: globalRandom() * Math.PI * 2 }));
         for (let x = 0; x < canvas.width; x++) {
@@ -1426,7 +1426,7 @@
 			// Filter out dead trail particles
 			e.trail = e.trail.filter(t => t.life > 0);
 			
-			// -- IMPACT LOGIC (unchanged) --
+			// -- IMPACT LOGIC --
 			if (e.y >= e.targetY) {
 				e.stage = 'impact';
 				e.life = 60;
@@ -1928,6 +1928,18 @@
                         ball.vy *= 0.5;
                         ball.bounces++; // A hit counts as a bounce
                     }
+                }
+            }
+            for(const creature of activeCreatures){
+                const dist = Math.hypot(ball.x - creature.x, ball.y - creature.screenY);
+                if(dist < 10) { // A small 10px radius for creatures
+                    ball.vx *= -0.5 + (globalRandom() - 0.5) * 0.4;
+                    ball.vy *= 0.5;
+                    ball.bounces++; // A hit counts as a bounce
+                    
+                    // Make the creature run away when hit
+                    creature.state = 'leaving';
+                    creature.speed *= 1.5; 
                 }
             }
         }
