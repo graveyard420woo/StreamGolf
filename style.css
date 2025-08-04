@@ -72,7 +72,7 @@ h3 { margin-top: 0.5rem; text-align: center; border-bottom: 1px solid var(--ui-b
 		padding: 35px;
 		padding-top: 13px;
 		backdrop-filter: blur(10px);
-		height: 600px;
+		height: 550px;
 		width: 360px;
 		position: fixed;
   		top: 50%;
