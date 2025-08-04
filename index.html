@@ -1934,7 +1934,7 @@
                 const dist = Math.hypot(ball.x - creature.x, ball.y - creature.screenY);
                 
                 // Check for collision and make sure the creature isn't already in a temporary speed boost
-                if(dist < 10 && !creature.isSpedUp) { 
+                if(dist < 12) { 
                     
                     // --- Ball Physics: Bounce in a random direction ---
                     const bounceSpeed = Math.hypot(ball.vx, ball.vy) * 0.7; // Keep some momentum, but dampen it
@@ -1944,9 +1944,8 @@
                     ball.bounces++;
 
                     // --- Creature Reaction: Temporary speed boost ---
-                    creature.isSpedUp = true; // A flag to prevent multiple hits from stacking speed boosts
                     const originalSpeed = creature.speed;
-                    creature.speed *= 2.5; // Give it a significant, but short, burst of speed
+                    creature.speed *= 2.6; // Give it a significant, but short, burst of speed
 
                     // Set a timer to return the creature to its normal speed after half a second
                     setTimeout(() => {
@@ -2593,44 +2592,59 @@
     }
 
     function updateAndDrawPuddles() {
-        puddles = puddles.filter(p => p.life > 0);
-        if (puddles.length === 0) return;
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height);
-        ctx.lineTo(0, landscapeHeightMap[0]);
-        for (let x = 1; x < canvas.width; x++) { if (landscapeHeightMap[x]) ctx.lineTo(x, landscapeHeightMap[x]); }
-        ctx.lineTo(canvas.width, canvas.height);
-        ctx.closePath();
-        ctx.clip();
-
-        puddles.forEach(p => {
-            p.life--;
-            if (weather.type !== 'rain') p.radius *= 0.999;
-            ctx.save();
-            ctx.globalAlpha = Math.min(1, p.life / 200) * 0.7;
-            ctx.fillStyle = '#5a6a7a';
-            ctx.shadowColor = '#5a6a7a';
-            ctx.shadowBlur = 15;
-            ctx.beginPath();
-            ctx.ellipse(p.x, p.y, p.radius, p.radius*0.5, 0, 0, Math.PI*2);
-            ctx.fill();
-            ctx.restore();
-
-            ctx.save();
-            ctx.globalAlpha = Math.min(1, p.life / 200) * 0.5;
-            ctx.beginPath();
-            ctx.ellipse(p.x, p.y, p.radius, p.radius*0.5, 0, 0, Math.PI*2);
-            ctx.clip();
-            ctx.translate(p.x, p.y + p.radius*0.5);
-            ctx.scale(1, -0.5);
-            ctx.drawImage(canvas, -p.x, -p.y - p.radius*0.5);
-            ctx.restore();
-        });
-
-        ctx.restore();
-    }
+		puddles = puddles.filter(p => p.life > 0);
+		if (puddles.length === 0) return;
+	
+		ctx.save();
+		ctx.beginPath();
+		ctx.moveTo(0, canvas.height);
+		ctx.lineTo(0, landscapeHeightMap[0]);
+		for (let x = 1; x < canvas.width; x++) {
+			if (landscapeHeightMap[x]) ctx.lineTo(x, landscapeHeightMap[x]);
+		}
+		ctx.lineTo(canvas.width, canvas.height);
+		ctx.closePath();
+		ctx.clip();
+	
+		puddles.forEach(p => {
+			p.life--;
+			if (weather.type !== 'rain') p.radius *= 0.999;
+	
+			// Add a fade-in property to the puddle if it doesn't exist
+			if (p.fadeIn === undefined) {
+				p.fadeIn = 0;
+			}
+	
+			// Increase the fadeIn value until it reaches 1
+			if (p.fadeIn < 1) {
+				p.fadeIn += 0.02; // You can adjust this value to control the fade-in speed
+			}
+	
+			ctx.save();
+			// Multiply the original alpha by the fadeIn value
+			ctx.globalAlpha = Math.min(1, p.life / 200) * 0.7 * p.fadeIn;
+			ctx.fillStyle = '#5a6a7a';
+			ctx.shadowColor = '#5a6a7a';
+			ctx.shadowBlur = 15;
+			ctx.beginPath();
+			ctx.ellipse(p.x, p.y, p.radius, p.radius * 0.5, 0, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.restore();
+	
+			ctx.save();
+			// Also apply the fadeIn to the reflection
+			ctx.globalAlpha = Math.min(1, p.life / 200) * 0.5 * p.fadeIn;
+			ctx.beginPath();
+			ctx.ellipse(p.x, p.y, p.radius, p.radius * 0.5, 0, 0, Math.PI * 2);
+			ctx.clip();
+			ctx.translate(p.x, p.y + p.radius * 0.5);
+			ctx.scale(1, -0.5);
+			ctx.drawImage(canvas, -p.x, -p.y - p.radius * 0.5);
+			ctx.restore();
+		});
+	
+		ctx.restore();
+	}
 
     // ## UTILITY FUNCTION DEFINITIONS ## 
     function setupCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; ctx.imageSmoothingEnabled = false; }
