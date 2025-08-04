@@ -766,6 +766,8 @@
 
         updateAndDrawSparkles();
         updateAndDrawPuddles();
+		
+		drawGolfFlag(time);
 
         if (globalRandom() < 0.00005 && weather.type === 'none') {
             const weatherOptions = ['rain', 'snow', 'windy'];
@@ -1794,7 +1796,49 @@
             ctx.stroke();
         });
     }
-//
+
+	function drawGolfFlag(time) {
+			if (!golfHole) return; // Don't do anything if the hole hasn't been created yet
+	
+			const poleHeight = 35;
+			const poleX = golfHole.x;
+			const poleTopY = golfHole.y - poleHeight;
+	
+			// Draw the pole (2px wide)
+			ctx.fillStyle = '#888888'; // Darker side for a 3D effect
+			ctx.fillRect(poleX + 1, poleTopY, 1, poleHeight);
+			ctx.fillStyle = '#cccccc'; // Lighter main color
+			ctx.fillRect(poleX, poleTopY, 1, poleHeight);
+	
+			// --- Draw the Flag ---
+			const flagWidth = 12;
+			const flagHeight = 8;
+			const flagColor = '#ec008c';   // A bright pink to match the UI
+			const shadowColor = '#b41e8e'; // A darker shade for texture
+			const waveAmplitude = 2.5;     // How much the flag will wave
+	
+			// We will draw the flag "pixel by pixel" to make it wave realistically
+			for (let i = 0; i < flagWidth; i++) { // Horizontal position along the flag
+				for (let j = 0; j < flagHeight; j++) { // Vertical position on the flag
+	
+					// The wave offset is calculated using sine, based on time and the pixel's position.
+					// This makes the flag ripple naturally.
+					const waveOffset = Math.sin((time / 300) + (i / 3)) * waveAmplitude;
+	
+					// Use an alternating color for a simple textured look
+					ctx.fillStyle = (i % 2 === j % 2) ? flagColor : shadowColor;
+	
+					// Draw the individual pixel of the flag
+					ctx.fillRect(
+						Math.round(poleX + 2 + i + waveOffset), // X position, attached to pole + wave
+						poleTopY + j,                          // Y position
+						1,                                     // Pixel width
+						1                                      // Pixel height
+					);
+				}
+			}
+		}
+
     function updateAndDrawGolfer(golfer) {
         // Update the golfer's ground position
         golfer.screenY = landscapeHeightMap[Math.round(golfer.x)] || golfer.screenY;
