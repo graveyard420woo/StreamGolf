@@ -15,7 +15,7 @@
 
 <div id="bigcontainer1" class="initial-fade"><div id="bigcontainer"><div id="centercontentbox"><img id="gy-logo" style="float:left; margin-left:-15px;" src="gxtrees.png">
                     <span class="description-name text"><a class="logofollow-box" href="https://www.twitch.tv/graveyard420woo" target="_blank"><img id="gy-logo" src="gy.png"></a>Description:</span>
-                    <span class="description-main description">This is a dynamic overlay that creates a random, procedural golf course landscape to be played by everyone in chat on your stream.<br>
+                    <span class="description-main description">This is a dynamic overlay that creates a random, procedural golf course landscape to be played by everyone in chat on your stream. ReadMe for commands & stuff ;)<br>
                     Simply add it as a browser source by copying the URL from the address bar after connecting your Twitch!</span>
                     <br>
                     <a id="authorize" class="login-box" target="">
@@ -583,8 +583,6 @@
                 drawLeafMass(pixels, x + Math.cos(angle) * dist - 2, y + Math.sin(angle) * dist - 2, clusterZ + 2, clusterRadius * 0.7, palette.leaf[1], 1.2, random);
             }
         },
-		/*
-		//uncomment for Saguaro cacti to be included
         generateSaguaro: (pixels, x, y, palette, random) => {
             const mainHeight = 70 + random() * 50;
             const mainWidth = 6 + random() * 4;
@@ -626,7 +624,6 @@
                 drawCactusColumn(pixels, x + (mainWidth/2 * direction) + (horizontalBend * direction), y, armStartZ, armHeight, armWidth, 0.4);
             }
         },
-		*/
         generateSunflower: (pixels, x, y, palette, random) => {
             const stemHeight = 60 + random() * 20;
             const stemWidth = 2;
@@ -763,7 +760,7 @@
     function animate(time) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        updateTimeAndLighting(time);
+        //updateTimeAndLighting(time);
 
         if (landscapeCanvas) ctx.drawImage(landscapeCanvas, 0, 0);
 
@@ -775,9 +772,9 @@
             if (currentSeason === 'winter') weatherOptions.push('snow', 'snow');
             startWeather(weatherOptions[Math.floor(globalRandom() * weatherOptions.length)]);
         }
-        if (globalRandom() < 0.00005 && events.length === 0) startEvent('meteor');
+        if (globalRandom() < 0.00001 && events.length === 0) startEvent('meteor');
         if (globalRandom() < 0.0009 && activeCreatures.size < 11) startEvent('creature');
-        if (globalRandom() < 0.008 && ambientLife.length < 15) startAmbientLife(time);
+        if (globalRandom() < 0.00008 && ambientLife.length < 15) startAmbientLife(time);
         
         const renderables = [...activePlants.values(), ...activeCreatures, ...events.filter(e => e.type === 'golfBall' || e.type === 'golfer' || e.type === 'holeInOne')];
         renderables.sort((a, b) => (a.screenY + (a.z || 0)) - (b.screenY + (b.z || 0)));
@@ -869,7 +866,6 @@
             ctx.restore();
         }
         
-        updateAndDrawClouds();
         updateAndDrawWeather();
         updateAndDrawEvents(time);
         updateAndDrawAmbientLife(time);
@@ -904,7 +900,7 @@
                 plant.allPixels.forEach(p => {
                     const s = toScreen(p.x, p.y, p.z);
                     spriteCtx.fillStyle = p.color;
-                    spriteCtx.fillRect(s.x - bounds.minX, s.y - bounds.minY, 0.94, 0.94);
+                    spriteCtx.fillRect(s.x - bounds.minX, s.y - bounds.minY, 0.94, 0.97);
                 });
 
                 plant.spriteOffset = {x: bounds.minX, y: bounds.minY};
@@ -917,7 +913,7 @@
             plant.rotation += 0.01;
             if (plant.rotation > Math.PI / 2) {
                 plant.status = 'decaying';
-                plant.life = 120;
+                plant.life = 80;
                 plant.decayStartTime = plant.life;
                 for (let i = 0; i < 50; i++) {
                     ambientLife.push({
@@ -1176,91 +1172,6 @@
             }
         });
     }
-
-/*    function updateAndDrawMeteor(e) {
-        if (e.stage === 'falling') {
-            e.x += e.vx; e.y += e.vy;
-            e.trail.push({x: e.x, y: e.y, life: 50});
-            ctx.fillStyle = '#654321'; ctx.beginPath(); ctx.arc(e.x, e.y, 5, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = 'orange'; ctx.beginPath(); ctx.arc(e.x, e.y, 4, 0, Math.PI * 2); ctx.fill();
-            e.trail.forEach(t => {
-                t.life--;
-                ctx.fillStyle = `rgba(255, 180, 80, ${t.life/50})`;
-                ctx.beginPath(); ctx.arc(t.x, t.y, 2, 0, Math.PI*2); ctx.fill();
-            });
-            e.trail = e.trail.filter(t => t.life > 0);
-            if (e.y >= e.targetY) {
-                e.stage = 'impact'; e.life = 60;
-                activePlants.forEach(plant => {
-                    const dist = Math.hypot(plant.screenX - e.targetX, plant.screenY - e.targetY);
-                    if (dist < 40 && plant.status === 'idle') {
-                        plant.status = 'burning';
-                        plant.life = 300 + globalRandom() * 120;
-                    }
-                });
-            }
-        } else if (e.stage === 'impact') {
-            if (e.life === 59) {
-                const palettes = [ { floor: '#221a14', rim: '#4a3a2a' }, { floor: '#3d3d3d', rim: '#555555' }, { floor: '#402E1D', rim: '#624A32' }, { floor: '#1a1a1a', rim: '#333333' } ];
-                const palette = palettes[Math.floor(globalRandom() * palettes.length)];
-                
-                const cx = e.targetX;
-                const cy = e.targetY + 5;
-                const baseRadius = 15 + globalRandom() * 100;
-                const complexity = 5 + globalRandom() * 4;
-                const jitter = 0.1 + globalRandom() * 0.4;
-                const phase1 = globalRandom() * 10;
-                const phase2 = globalRandom() * 10;
-                
-                const getLumpyRadius = (angle) => {
-                     const noise = (Math.sin(angle * complexity + phase1) + Math.cos(angle * (complexity/2) + phase2)) / 2;
-                     return baseRadius * (1 + noise * jitter);
-                };
-
-                const maxRadius = baseRadius * (1 + jitter) + 3;
-
-                for (let x = Math.floor(cx - maxRadius); x <= Math.ceil(cx + maxRadius); x++) {
-                    if (x < 0 || x >= landscapeHeightMap.length) continue;
-                    for (let y = Math.floor(cy - maxRadius); y <= Math.ceil(cy + maxRadius); y++) {
-                        if (y >= landscapeHeightMap[x]) {
-                            const angle = Math.atan2(y - cy, x - cx);
-                            const lumpyRadius = getLumpyRadius(angle);
-                            const lumpyRim = lumpyRadius + 2 + globalRandom();
-                            const distSq = (x - cx) ** 2 + (y - cy) ** 2;
-
-                            if (distSq <= lumpyRadius ** 2) {
-                                landCtx.fillStyle = palette.floor;
-                                landCtx.fillRect(x, y, 1, 1);
-								landCtx.globalAlpha = Math.random() * (0.8 - 0.3) + 0.3;
-                            } else if (distSq <= lumpyRim ** 2) {
-                                landCtx.fillStyle = palette.rim;
-                                landCtx.fillRect(x, y, 1, 1);
-								landCtx.globalAlpha = Math.random() * (0.8 - 0.3) + 0.3;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height);
-            ctx.lineTo(0, landscapeHeightMap[0]);
-            for (let x = 1; x < canvas.width; x++) { if (landscapeHeightMap[x]) ctx.lineTo(x, landscapeHeightMap[x]); }
-            ctx.lineTo(canvas.width, canvas.height);
-            ctx.closePath();
-            ctx.clip();
-            
-            const progress = 1 - e.life / 60;
-            ctx.fillStyle = `rgba(255, 200, 100, ${1 - progress})`;
-            ctx.beginPath();
-            ctx.arc(e.targetX, e.targetY, progress * 40, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.restore();
-        }
-    }*/
-	
 	/**
 	 * A selection of color palettes for the meteor's appearance.
 	 * Each meteor will be randomly assigned one of these palettes upon creation.
@@ -1414,8 +1325,6 @@
 				});
 			}
 		}
-	
-	
 		if (e.stage === 'falling') {
 			// -- MOVEMENT & ROTATION --
 			e.x += e.vx;
@@ -2582,35 +2491,6 @@
 			ctx.fillRect(9, -15, 2, 2);
 		}
 }
-	//old creatures
- /*if (creature.creatureType === 'fox') {
-	ctx.fillStyle = '#C06014'; ctx.fillRect(0, -8, 8, 4);
-	ctx.fillStyle = '#333'; ctx.fillRect(1, -4, 2, 3); ctx.fillRect(5, -4, 2, 3);
-	ctx.fillStyle = 'white'; ctx.fillRect(7, -8, 3, 2);
-	ctx.fillStyle = '#333'; ctx.fillRect(9, -8, 1, 1); ctx.fillRect(6, -9, 1, 1);
-	ctx.fillRect(3, -11, 2, 2);
-	ctx.fillStyle = '#C06014'; ctx.fillRect(-6, -8, 6, 2);
-	ctx.fillStyle = 'white'; ctx.fillRect(-8, -8, 2, 2);
-} else if (creature.creatureType === 'deer') {
-	ctx.fillStyle = '#8B5A2B'; ctx.fillRect(0, -12, 10, 6);
-	ctx.fillStyle = '#654321'; ctx.fillRect(1, -6, 2, 6); ctx.fillRect(7, -6, 2, 6);
-	ctx.fillStyle = '#A0522D'; ctx.fillRect(9, -15, 4, 3);
-	ctx.fillStyle = '#333'; ctx.fillRect(12, -15, 1, 1); ctx.fillRect(10, -16, 1, 1);
-	ctx.fillStyle = '#654321'; ctx.fillRect(8, -19, 1, 3); ctx.fillRect(6, -21, 1, 3);
-} else if (creature.creatureType === 'rabbit') {
-	ctx.fillStyle = '#999999'; ctx.fillRect(0, -5, 5, 4);
-	ctx.fillStyle = 'white'; ctx.fillRect(4, -6, 3, 3);
-	ctx.fillStyle = '#333'; ctx.fillRect(6, -5, 1, 1);
-	ctx.fillStyle = 'white'; ctx.fillRect(3, -9, 1, 3);
-	ctx.fillRect(5, -9, 1, 3);
-} else if (creature.creatureType === 'bear') {
-	ctx.fillStyle = '#5C4033'; ctx.fillRect(0, -10, 12, 8);
-	ctx.fillStyle = '#3D2B1F'; ctx.fillRect(1, -2, 4, 3); ctx.fillRect(7, -2, 4, 3);
-	ctx.fillStyle = '#5C4033'; ctx.fillRect(10, -13, 5, 4);
-	ctx.fillStyle = '#3D2B1F'; ctx.fillRect(14, -12, 1, 1);
-	ctx.fillRect(11, -14, 1, 1);
-	ctx.fillRect(9, -15, 2, 2);
-}*/
 
     function startAmbientLife(time) {
         const type = (timeOfDay > 0.75 || timeOfDay < 0.25) ? 'firefly' : 'bird';
@@ -2647,21 +2527,7 @@
     }
 
     function erodeLandscape() {
-        /*let erodedTrees = 0;
-        for(let i=0; i < 500; i++){
-            const x = Math.floor(globalRandom() * canvas.width);
-            const waterLevel = canvas.height - canvas.height/7;
-            if(landscapeHeightMap[x] > waterLevel) {
-                landscapeHeightMap[x] -= 1;
-                landCtx.clearRect(x, landscapeHeightMap[x], 1, 1);
-            }
-        }
-        activePlants.forEach(plant => {
-            if(erodedTrees < 2 && globalRandom() < 0.1 && plant.screenY > landscapeHeightMap[Math.round(plant.screenX)] + 10 && plant.status === 'idle') {
-                plant.status = 'falling';
-                erodedTrees++;
-            }
-        });*/
+        
     }
 
     function updatePlantListUI() {
@@ -2684,28 +2550,6 @@
         }
     }
 
-    function updateTimeAndLighting(time) {
-        timeOfDay = (time / 600000) % 1;
-        let overlayColor = 'rgba(0,0,0,0)';
-        if (timeOfDay > 0.5) { 
-             const nightProgress = (timeOfDay - 0.5) * 2;
-             overlayColor = `rgba(10, 20, 40, ${0.4 * Math.sin(nightProgress * Math.PI)})`;
-        } else {
-            const goldProgress = Math.sin(timeOfDay * 2 * Math.PI);
-            overlayColor = `rgba(255, 185, 30, ${0.10 * goldProgress})`;
-        }
-
-        ctx.fillStyle = overlayColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        seasonTimer++;
-        if (seasonTimer > 180000) {
-            seasonTimer = 0;
-            const currentIdx = seasons.indexOf(currentSeason);
-            currentSeason = seasons[(currentIdx + 1) % seasons.length];
-        }
-    }
-
     function updateAndDrawSparkles() {
         sparkles.forEach(s => {
             s.life--;
@@ -2725,31 +2569,6 @@
 			const lightness = Math.floor(Math.random() * (90 - 50 + 1)) + 50;  // 50% to 60%
             ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
             ctx.fillRect(s.x, s.y, 2, 2);
-        });
-    }
-
-    function updateAndDrawClouds() {
-        if(globalRandom() < 0.01 && clouds.length < 15) {
-            const puffs = Array.from({length: 5 + Math.floor(globalRandom() * 8)}, () => ({
-                dx: (globalRandom() - 0.5) * 120, dy: (globalRandom() - 0.5) * 30,
-                r: 30 + globalRandom() * 30
-            }));
-            clouds.push({ x: -250, y: globalRandom() * canvas.height / 3, speed: 0.2 + globalRandom() * 0.3, puffs, life: 1 });
-        }
-        clouds = clouds.filter(c => c.x < canvas.width + 250);
-        clouds.forEach(c => {
-            c.x += c.speed;
-            ctx.save();
-            const dayFactor = Math.sin(timeOfDay * Math.PI);
-            ctx.fillStyle = `rgba(255, 255, 255, ${0.01 * dayFactor})`;
-            ctx.shadowColor = `rgba(255, 255, 255, ${dayFactor * 0.01})`;
-            ctx.shadowBlur = 40;
-            c.puffs.forEach(p => {
-                ctx.beginPath();
-                ctx.ellipse(c.x + p.dx, c.y + p.dy, p.r, p.r * 1, 0, 0, Math.PI * 2);
-                ctx.fill();
-            });
-            ctx.restore();
         });
     }
 
