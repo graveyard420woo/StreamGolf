@@ -392,8 +392,6 @@
                 });
         }
 	
-	// ## Geminis shit
-	
 	 // ## 1. SETUP & STATE ##
     const canvas = document.getElementById('arboretum-canvas');
     const ctx = canvas.getContext('2d');
@@ -459,7 +457,6 @@
     const createSeededRandom = (seed) => () => { seed = Math.sin(seed) * 10000; return seed - Math.floor(seed); };
 
     // ## 4. GENERATION ENGINES ##
-
     function generateLandscape() {
         landscapeCanvas = document.createElement('canvas');
         landscapeHeightMap = new Array(canvas.width).fill(0);
@@ -684,12 +681,12 @@
         globalRandom = createSeededRandom(seed);
         setupCanvas();
         generateLandscape();
-        plantListDiv.addEventListener('click', onRemoveClick);
-        generateBtn.addEventListener('click', addPlant);
-        meteorBtn.addEventListener('click', () => startEvent('meteor'));
-        lightningBtn.addEventListener('click', () => startEvent('lightning'));
-        fireBtn.addEventListener('click', () => startEvent('forestFire'));
-        golfBtn.addEventListener('click', () => startEvent('golf', 'golfers Name'));
+        //plantListDiv.addEventListener('click', onRemoveClick);
+        //generateBtn.addEventListener('click', addPlant);
+        //meteorBtn.addEventListener('click', () => startEvent('meteor'));
+        //lightningBtn.addEventListener('click', () => startEvent('lightning'));
+        //fireBtn.addEventListener('click', () => startEvent('forestFire'));
+        //golfBtn.addEventListener('click', () => startEvent('golf', 'golfers Name'));
         updatePlantListUI();
         animate(0);
     }
@@ -724,9 +721,9 @@
         return { screenX, screenY, textRect };
     }
 
-    function addPlant(thechattername, thehexvalue) { // **LINE CHANGED MUST UPDATE**
-        const name = thechattername; //nameInput.value || 'My Plant';  **LINE CHANGED MUST UPDATE**
-        const hex = thehexvalue; //colorPicker.value;  **LINE CHANGED MUST UPDATE**
+    function addPlant(thechattername, thehexvalue) { 
+        const name = thechattername; //nameInput.value || 'My Plant';
+        const hex = thehexvalue; //colorPicker.value;
         const plantSeed = createSeed(name + hex + globalRandom());
         const plantRandom = createSeededRandom(plantSeed);
 
@@ -759,8 +756,6 @@
 
     function animate(time) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        //updateTimeAndLighting(time);
 
         if (landscapeCanvas) ctx.drawImage(landscapeCanvas, 0, 0);
 
