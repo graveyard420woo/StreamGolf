@@ -385,7 +385,6 @@
 					chattersColor = `${resp.data[0].color}`					
 					if (resp.data[0].color) {
 						addPlant(theusername, chattersColor);
-						sendTwitchChatMessage(my_user_id, 'whoaa nelly');
 					} else {
 						addPlant(theusername, '#ED0080');
 					}
@@ -2257,7 +2256,7 @@
         const scale = Math.sin(progress * Math.PI) * 1.2;
         const alpha = Math.sin(progress * Math.PI);
         const message = `${e.name}`+' got a Hole in ONE!';
-		sendTwitchChatMessage(message);
+		sendTwitchChatMessage(my_user_id, message);
         
         ctx.save();
         ctx.translate(canvas.width/2, canvas.height/2);
