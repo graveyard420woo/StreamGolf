@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Art Arboretum</title>
+    <title>Stream Golf by graveyard v1.1</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,7 +15,7 @@
 
 <div id="bigcontainer1" class="initial-fade"><div id="bigcontainer"><div id="centercontentbox"><img id="gy-logo" style="float:left; margin-left:-15px;" src="gxtrees.png">
                     <span class="description-name text"><a class="logofollow-box" href="https://www.twitch.tv/graveyard420woo" target="_blank"><img id="gy-logo" src="gy.png"></a>Description:</span>
-                    <span class="description-main description">This is an overlay that creates a dynamic landscape of unique trees for everyone in chat on your stream. Also, theres golf!<br>
+                    <span class="description-main description">This is a dynamic overlay that creates a random, procedural golf course landscape to be played by everyone in chat on your stream.<br>
                     Simply add it as a browser source by copying the URL from the address bar after connecting your Twitch!</span>
                     <br>
                     <a id="authorize" class="login-box" target="">
@@ -26,12 +26,12 @@
                      <img id="twitch-logo" src="tlogo.png">
                         <span id="gy-text">Follow graveyard's channel!</span>
                     </a> 
-                    <span class="description"><br>If this thing helps you along your journey, I am very pleased! Feel free to drop a follow on my channel!</span>     
+                    <span class="description"><br>Feel free to follow my channel!</span>     
                     <a class="paypal-box" href="https://www.paypal.com/ncp/payment/G7TJ4WR438AJU" target="_blank">
                      <img id="twitch-logo" src="pp.png">
                         <span id="paypal-text">Donate/Tip with Paypal!</span>
                     </a>
-                    <span class="description"><br>Just your humble artist/tech (; Always appreciated but never necessary or solicited.</span>
+                    <span class="description"><br>(: Always appreciated but never necessary or solicited.</span>
                 <div><div id="log"><div>Click "Connect Your Twitch" above to start!</div></div> 
 <span id="keepalive"></span></div></div>
 </div>
@@ -59,8 +59,8 @@
     <script type="text/javascript" src="eventsub.js"></script>
     <script type="text/javascript">
 
-		var client_id = 'nal8c2w2hg2wki250pxxyesdh5fwrz';
-        var redirect = 'https://graveyard420woo.github.io/GXTrees/';
+		var client_id = 'pmxtgfg5df28q2yb6tevp2j319byoq';
+        var redirect = 'https://graveyard420woo.github.io/StreamGolf/';
         var access_token = '';
         var socket_space = '';
         var session_id = '';
@@ -130,18 +130,19 @@
                         my_user_id = resp.data[0].id;
                         requestHooks(resp.data[0].id, my_user_id);	
 						//getStuffNow(my_user_id);				
-						setInterval(() => {
+						/*setInterval(() => {
 							getStuffNow(my_user_id)
-						}, 12000); // A small delay							
+						}, 12000); // A small delay	*/						
                     });
                     socket_space.on('session_keepalive', () => {
                         document.getElementById('keepalive').textContent = new Date();
                     });
 					socket_space.on('channel.chat.message', ({ metadata, payload }) => {
     					let { event } = payload;
-    					let { chatter_user_name , message } = event;		
+    					let { chatter_user_name , chatter_user_id , message } = event;		
 							console.log(`${chatter_user_name}: ${message.text}`);
-							startEvent('golf', `${chatter_user_name}`)	
+							startEvent('golf', `${chatter_user_name}`)
+							if(`${message.text}` == '!tree'){makeChattersTree(chatter_user_id, chatter_user_name);}	
 							if(`${message.text}` == '!meteor'){startEvent('meteor')}
 							if(`${message.text}` == '!lightning'){startEvent('lightning')}
 							if(`${message.text}` == '!wildfire'){startEvent('forestFire')}
@@ -245,34 +246,24 @@
                 .then(resp => {
 					//console.dir(resp.data[0]);
 					const currentChatters = resp.data.map(chatter => ({ user_id: chatter.user_id, user_name: chatter.user_name }));
-
-					// Find new chatters
 					const newChatters = currentChatters.filter(currentChatter =>
 						!previousChatters.some(previousChatter => previousChatter.user_id === currentChatter.user_id)
 					);
-		
-					// Find missing chatters
 					const missingChatters = previousChatters.filter(previousChatter =>
 						!currentChatters.some(currentChatter => currentChatter.user_id === previousChatter.user_id)
 					);
-		
-					// Process new chatters
 					newChatters.forEach(chatter => {
 						console.log("New chatter:", chatter.user_name);
 						if (chatter.user_name == "StreamElements"){
 							console.log("no tree for", chatter.user_name);
 						}else{
-							makeChattersTree(chatter.user_id, chatter.user_name);
+							//makeChattersTree(chatter.user_id, chatter.user_name);
 						}
 					});
-		
-					// Process missing chatters
 					missingChatters.forEach(chatter => {
 						console.log("Missing chatter:", chatter.user_name);
 						removeChattersTree(chatter.user_name);
 					});
-		
-					// Update the previous chatters list for the next run
 					previousChatters = currentChatters;
 						})
                 .catch(err => {
