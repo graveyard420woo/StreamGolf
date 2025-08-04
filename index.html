@@ -328,8 +328,7 @@
 		// If the loop completes without finding the user, log a message.
 		console.log(`No active plant found for username: ${username}`);
 	}
-		
-
+			
         function requestHooks(user_id, my_id) {
             let eventSubTypes = {
 				
@@ -722,6 +721,12 @@
     }
 
     function addPlant(thechattername, thehexvalue) { 
+		for (const plant of activePlants.values()) {
+            if (plant.name.toLowerCase() === thechattername.toLowerCase()) {
+                console.log(`Plant for ${thechattername} already exists. Addition skipped.`);
+                return; 
+            }
+        }
         const name = thechattername; //nameInput.value || 'My Plant';
         const hex = thehexvalue; //colorPicker.value;
         const plantSeed = createSeed(name + hex + globalRandom());
@@ -762,14 +767,14 @@
         updateAndDrawSparkles();
         updateAndDrawPuddles();
 
-        if (globalRandom() < 0.0005 && weather.type === 'none') {
+        if (globalRandom() < 0.00005 && weather.type === 'none') {
             const weatherOptions = ['rain', 'snow', 'windy'];
             if (currentSeason === 'winter') weatherOptions.push('snow', 'snow');
             startWeather(weatherOptions[Math.floor(globalRandom() * weatherOptions.length)]);
         }
         if (globalRandom() < 0.00001 && events.length === 0) startEvent('meteor');
         if (globalRandom() < 0.0009 && activeCreatures.size < 11) startEvent('creature');
-        if (globalRandom() < 0.00008 && ambientLife.length < 15) startAmbientLife(time);
+        if (globalRandom() < 0.008 && ambientLife.length < 18) startAmbientLife(time);
         
         const renderables = [...activePlants.values(), ...activeCreatures, ...events.filter(e => e.type === 'golfBall' || e.type === 'golfer' || e.type === 'holeInOne')];
         renderables.sort((a, b) => (a.screenY + (a.z || 0)) - (b.screenY + (b.z || 0)));
