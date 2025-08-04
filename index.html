@@ -343,32 +343,6 @@
 			}
 		}
 		
-		function sendHIONotifChat(thehiousername) {
-            let url = new URL('https://api.twitch.tv/helix/chat/color?user_id='+`${theuserid}`);
-            fetch(
-                url,
-                {
-                    "headers": {
-                        "Client-ID": client_id,
-                        "Authorization": "Bearer " + access_token
-                    }
-                }
-            )
-                .then(resp => resp.json())
-                .then(resp => {
-					chattersColor = `${resp.data[0].color}`					
-					if (resp.data[0].color) {
-						addPlant(theusername, chattersColor);
-					} else {
-						addPlant(theusername, '#ED0080');
-					}
-                })
-                .catch(err => {
-                    console.log(err);
-                    log('Error with getUsersColor Call');
-                });
-        }
-		
 		function makeChattersTree(theuserid, theusername) {
             let url = new URL('https://api.twitch.tv/helix/chat/color?user_id='+`${theuserid}`);
             fetch(
