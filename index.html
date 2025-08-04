@@ -2202,8 +2202,6 @@
 //
     function updateAndDrawHoleInOne(e) {
         if(e.life === 239) {
-			const message = `${e.name}`+' got a Hole in ONE!';
-			sendTwitchChatMessage(my_user_id, message);
             for(let i=0; i < 50; i++) {
                 const angle = globalRandom() * Math.PI * 2;
                 const speed = globalRandom() * 3 + 1;
@@ -2216,6 +2214,11 @@
                 });
             }
         }
+		
+		if(e.life == 237) {
+			const message = `${e.name}`+' got a Hole in ONE!';
+			sendTwitchChatMessage(my_user_id, message);
+		}
 
         e.particles.forEach(p => {
             p.x += p.vx;
