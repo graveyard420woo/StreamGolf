@@ -847,7 +847,7 @@
         }
         if (globalRandom() < 0.00001 && events.length === 0) startEvent('meteor');
         if (globalRandom() < 0.0009 && activeCreatures.size < 11) startEvent('creature');
-        if (globalRandom() < 0.008 && ambientLife.length < 18) startAmbientLife(time);
+        if (globalRandom() < 0.003 && ambientLife.length < 15) startAmbientLife(time);
         
         const renderables = [...activePlants.values(), ...activeCreatures, ...events.filter(e => e.type === 'golfBall' || e.type === 'golfer' || e.type === 'holeInOne')];
         renderables.sort((a, b) => (a.screenY + (a.z || 0)) - (b.screenY + (b.z || 0)));
