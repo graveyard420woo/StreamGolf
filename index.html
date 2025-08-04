@@ -1,0 +1,2815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Art Arboretum</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tiny5&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div id="bigcontainer1" class="initial-fade"><div id="bigcontainer"><div id="centercontentbox"><img id="gy-logo" style="float:left; margin-left:-15px;" src="gxtrees.png">
+                    <span class="description-name text"><a class="logofollow-box" href="https://www.twitch.tv/graveyard420woo" target="_blank"><img id="gy-logo" src="gy.png"></a>Description:</span>
+                    <span class="description-main description">This is an overlay that creates a dynamic landscape of unique trees for everyone in chat on your stream. Also, theres golf!<br>
+                    Simply add it as a browser source by copying the URL from the address bar after connecting your Twitch!</span>
+                    <br>
+                    <a id="authorize" class="login-box" target="">
+                     <img id="twitch-logo" src="tlogo.png">
+                        <span id="twitch-text">Connect Your Twitch!</span>
+                    </a>
+                    <a class="follow-box" href="https://www.twitch.tv/graveyard420woo" target="_blank">
+                     <img id="twitch-logo" src="tlogo.png">
+                        <span id="gy-text">Follow graveyard's channel!</span>
+                    </a> 
+                    <span class="description"><br>If this thing helps you along your journey, I am very pleased! Feel free to drop a follow on my channel!</span>     
+                    <a class="paypal-box" href="https://www.paypal.com/ncp/payment/G7TJ4WR438AJU" target="_blank">
+                     <img id="twitch-logo" src="pp.png">
+                        <span id="paypal-text">Donate/Tip with Paypal!</span>
+                    </a>
+                    <span class="description"><br>Just your humble artist/tech (; Always appreciated but never necessary or solicited.</span>
+                <div><div id="log"><div>Click "Connect Your Twitch" above to start!</div></div> 
+<span id="keepalive"></span></div></div>
+</div>
+    </div>
+    <canvas id="arboretum-canvas"></canvas>
+
+    <div id="plant-list-container">
+        <h3>Arboretum</h3>
+        <div id="plant-list"></div>
+    </div>
+
+    <div id="ui-container" class="controls">
+        <input type="text" id="name-input" placeholder="Seed Name..." value="Midsummer">
+        <input type="color" id="color-picker" value="#42A869">
+        <button id="generate-btn">Plant</button>
+    </div>
+
+    <div id="extracontrols" class="controls-extra">
+        <button id="meteor-btn">Meteor Strike</button>
+        <button id="lightning-btn">Lightning</button>
+        <button id="fire-btn">Wildfire</button>
+        <button id="golf-btn">Golf</button>
+    </div>
+    
+    <script type="text/javascript" src="eventsub.js"></script>
+    <script type="text/javascript">
+
+		var client_id = 'nal8c2w2hg2wki250pxxyesdh5fwrz';
+        var redirect = 'https://graveyard420woo.github.io/GXTrees/';
+        var access_token = '';
+        var socket_space = '';
+        var session_id = '';
+        var my_user_id = '';
+		var chattersColor = '';
+		let previousChatters = [];	
+		
+		const myBigAssDiv = document.getElementById('bigcontainer1');
+		  setTimeout(() => {
+			myBigAssDiv.classList.remove('initial-fade');
+			myBigAssDiv.classList.add('visible-fade');
+		  }, 1000); // 1000 milliseconds = 1 second
+		
+		document.getElementById("plant-list-container").style.display = "none";
+		document.getElementById("ui-container").style.display = "none";
+		document.getElementById("extracontrols").style.display = "none";	
+										
+		document.getElementById('authorize').setAttribute('href', 'https://id.twitch.tv/oauth2/authorize?client_id=' + client_id + '&redirect_uri=' + encodeURIComponent(redirect) + '&response_type=token&scope=moderator:read:chatters+moderator:read:followers+user:read:chat');
+
+        if (document.location.hash && document.location.hash != '') {
+            log('Checking for token');
+            var parsedHash = new URLSearchParams(window.location.hash.slice(1));
+            if (parsedHash.get('access_token')) {
+                log('Got a token');
+                processToken(parsedHash.get('access_token'));
+            }
+        }
+		
+		function log(message) {
+            let p = document.createElement('div');
+            document.getElementById('log').prepend(p);
+
+            let tim = document.createElement('span');
+            let t = [
+                new Date().getHours(),
+                new Date().getMinutes(),
+                new Date().getSeconds()
+            ]
+            t.forEach((v, i) => {
+                t[i] = v < 10 ? '0' + v : v;
+            });
+            tim.textContent = t.join(':');
+            p.append(tim);
+
+            let l = document.createElement('span');
+            p.append(l);
+            l.textContent = message;
+        }
+
+        function processToken(token) {
+            access_token = token;
+            fetch(
+                'https://api.twitch.tv/helix/users',
+                {
+                    "headers": {
+                        "Client-ID": client_id,
+                        "Authorization": "Bearer " + access_token
+                    }
+                }
+            )
+                .then(resp => resp.json())
+                .then(resp => {
+                    socket_space = new initSocket(true);
+                    socket_space.on('connected', (id) => {
+                        log(`Connected to WebSocket with ${id}`);
+                        session_id = id;
+                        my_user_id = resp.data[0].id;
+                        requestHooks(resp.data[0].id, my_user_id);	
+						//getStuffNow(my_user_id);				
+						setInterval(() => {
+							getStuffNow(my_user_id)
+						}, 12000); // A small delay							
+                    });
+                    socket_space.on('session_keepalive', () => {
+                        document.getElementById('keepalive').textContent = new Date();
+                    });
+					socket_space.on('channel.chat.message', ({ metadata, payload }) => {
+    					let { event } = payload;
+    					let { chatter_user_name , message } = event;		
+							console.log(`${chatter_user_name}: ${message.text}`);
+							startEvent('golf', `${chatter_user_name}`)	
+							if(`${message.text}` == '!meteor'){startEvent('meteor')}
+							if(`${message.text}` == '!lightning'){startEvent('lightning')}
+							if(`${message.text}` == '!wildfire'){startEvent('forestFire')}
+							if(`${message.text}` == '!meteorshower'){
+							for (let i = 0; i < 11; i++) {
+							  setTimeout(() => {
+								startEvent('meteor');
+							  }, 300 * i); 
+							 }
+							}
+							if(`${message.text}` == '!nbh'){
+							for (let i = 0; i < 6; i++) {
+							  setTimeout(() => {
+								startEvent('meteor');
+							  }, 300 * i); 
+							 }
+							}
+							if(`${message.text}` == '!lightningstorm'){
+							for (let i = 0; i < 15; i++) {
+							  setTimeout(() => {
+								startEvent('lightning');
+							  }, 300 * i); 
+							 }
+							}
+							if(`${message.text}` == '!forestfire'){
+							for (let i = 0; i < 20; i++) {
+							  setTimeout(() => {
+								startEvent('forestFire');
+							  }, 300 * i); 
+							 }
+							}
+							if(`${message.text}` == '!shawn'){
+							for (let i = 0; i < 30; i++) {
+							  setTimeout(() => {
+								startEvent('forestFire');
+							  }, 300 * i); 
+							 }
+							}
+							if(`${message.text}` == '!winter'){
+							for (let i = 0; i < 50; i++) {
+							  setTimeout(() => {
+								startEvent('meteor');
+							  }, 200 * i); 
+							 }
+							}
+							if(`${message.text}` == '!winter'){
+							for (let i = 0; i < 50; i++) {
+							  setTimeout(() => {
+								startEvent('golf', 'winter #'+i+1);
+							  }, 300 * i); 
+							 }
+							}
+							if(`${message.text}` == '!sandals'){
+							for (let i = 0; i < 30; i++) {
+							  setTimeout(() => {
+								startEvent('lightning');
+							  }, 300 * i); 
+							 }
+							}
+							if(`${message.text}` == '!sandals'){
+							for (let i = 0; i < 50; i++) {
+							  setTimeout(() => {
+								startEvent('golf', 'sandals #'+i+1);
+							  }, 300 * i); 
+							 }
+							}
+							if(`${message.text}` == '!golfparty'){
+							for (let i = 0; i < 69; i++) {
+							  setTimeout(() => {
+								startEvent('golf', `${chatter_user_name}`+' #'+i+1);
+							  }, 300 * i); 
+							 }
+							}
+							if(`${message.text}` == '!golf'){
+							for (let i = 0; i < 15; i++) {
+							  setTimeout(() => {
+								startEvent('golf', `${chatter_user_name}`+' #'+i+1);
+							  }, 600 * i); 
+							 }
+							}
+					});				
+				})	
+                .catch(err => {
+                    console.log(err);
+                    log('Error with Users Call');
+                });
+        }
+
+		function getStuffNow(broadcaster_id) {
+            let url = new URL('https://api.twitch.tv/helix/chat/chatters?broadcaster_id='+broadcaster_id+'&moderator_id='+broadcaster_id);
+            fetch(
+                url,
+                {
+                    "headers": {
+                        "Client-ID": client_id,
+                        "Authorization": "Bearer " + access_token
+                    }
+                }
+            )
+                .then(resp => resp.json())
+                .then(resp => {
+					//console.dir(resp.data[0]);
+					const currentChatters = resp.data.map(chatter => ({ user_id: chatter.user_id, user_name: chatter.user_name }));
+
+					// Find new chatters
+					const newChatters = currentChatters.filter(currentChatter =>
+						!previousChatters.some(previousChatter => previousChatter.user_id === currentChatter.user_id)
+					);
+		
+					// Find missing chatters
+					const missingChatters = previousChatters.filter(previousChatter =>
+						!currentChatters.some(currentChatter => currentChatter.user_id === previousChatter.user_id)
+					);
+		
+					// Process new chatters
+					newChatters.forEach(chatter => {
+						console.log("New chatter:", chatter.user_name);
+						if (chatter.user_name == "StreamElements"){
+							console.log("no tree for", chatter.user_name);
+						}else{
+							makeChattersTree(chatter.user_id, chatter.user_name);
+						}
+					});
+		
+					// Process missing chatters
+					missingChatters.forEach(chatter => {
+						console.log("Missing chatter:", chatter.user_name);
+						removeChattersTree(chatter.user_name);
+					});
+		
+					// Update the previous chatters list for the next run
+					previousChatters = currentChatters;
+						})
+                .catch(err => {
+                    console.log(err);
+                    log('Error with Users Call');
+                });
+        }
+		
+		function makeChattersTree(theuserid, theusername) {
+            let url = new URL('https://api.twitch.tv/helix/chat/color?user_id='+`${theuserid}`);
+            fetch(
+                url,
+                {
+                    "headers": {
+                        "Client-ID": client_id,
+                        "Authorization": "Bearer " + access_token
+                    }
+                }
+            )
+                .then(resp => resp.json())
+                .then(resp => {
+					chattersColor = `${resp.data[0].color}`					
+					if (resp.data[0].color) {
+						addPlant(theusername, chattersColor);
+					} else {
+						addPlant(theusername, '#ED0080');
+					}
+                })
+                .catch(err => {
+                    console.log(err);
+                    log('Error with getUsersColor Call');
+                });
+        }
+				
+		function removeChattersTree(username) {
+		// Find all the remove buttons on the page.
+		const allRemoveButtons = document.querySelectorAll('.remove-btn');
+	
+		// Iterate through the buttons to find the one with the matching username in its ID.
+		for (const btn of allRemoveButtons) {
+			const id = btn.dataset.id;
+	
+			// Check if the ID ends with the provided username, preceded by a '-'.
+			// This makes the check more specific (e.g., avoids matching a user 'test' in 'my-latest-test-run').
+			if (id && id.endsWith('-' + username)) {
+				const plant = activePlants.get(id);
+	
+				// Once the correct plant is found, execute the original logic.
+				if (plant && (plant.status === 'idle' || plant.status === 'growing')) {
+					plant.isPermanentRemoval = true;
+					plant.status = 'falling';
+					btn.disabled = true;
+					btn.closest('.plant-item').style.opacity = 0.5;
+					
+					// Log the found ID for confirmation and exit the loop.
+					console.log(`Found and initiated removal for ID: ${id}`);
+					return; 
+				}
+			}
+		}
+	
+		// If the loop completes without finding the user, log a message.
+		console.log(`No active plant found for username: ${username}`);
+	}
+		
+
+        function requestHooks(user_id, my_id) {
+            let eventSubTypes = {
+				
+				  'channel.follow': { version: "2", condition: { broadcaster_user_id: user_id, moderator_user_id: user_id } },
+				  'channel.chat.message': { version: "1", condition: { broadcaster_user_id: user_id, user_id: user_id } }
+				  /*
+				  'channel.prediction.begin': { version: "1", condition: { broadcaster_user_id: user_id } },
+				  'channel.prediction.progress': { version: "1", condition: { broadcaster_user_id: user_id } },
+				  'channel.prediction.lock': { version: "1", condition: { broadcaster_user_id: user_id } },
+				  'channel.prediction.end': { version: "1", condition: { broadcaster_user_id: user_id } },
+				  */
+            }	
+            
+            log(`Spawn Topics for ${user_id}`);
+
+            for (let type in eventSubTypes) {
+                log(`Attempt create ${type} - ${user_id}`);
+                let { version, condition } = eventSubTypes[type];
+
+                spawnHook(type, version, condition);
+            }
+        }
+        function spawnHook(type, version, condition) {
+            fetch(
+                'https://api.twitch.tv/helix/eventsub/subscriptions',
+                {
+                    "method": "POST",
+                    "headers": {
+                        "Client-ID": client_id,
+                        "Authorization": "Bearer " + access_token,
+                        'Content-Type': 'application/json'
+                    },
+                    "body": JSON.stringify({
+                        type,
+                        version,
+                        condition,
+                        transport: {
+                            method: "websocket",
+                            session_id
+                        }
+                    })
+                }
+            )
+                .then(resp => resp.json())
+                .then(resp => {
+                    if (resp.error) {
+                        log(`Error with eventsub Call ${type} Call: ${resp.message ? resp.message : ''}`);
+                    } else {
+                        log(`Created ${type}`);
+						//clear the scene for browser source use
+						document.getElementById("bigcontainer").style.display = "none";
+						document.getElementById("plant-list-container").style.display = "none";
+						document.getElementById("ui-container").style.display = "none";
+						document.getElementById("extracontrols").style.display = "none";
+                    }
+                })
+                .catch(err => {
+                    console.log(err);
+                    log(`Error with eventsub Call ${type} Call: ${err.message ? err.message : ''}`);
+                });
+        }
+	
+	// ## Geminis shit
+	
+	 // ## 1. SETUP & STATE ##
+    const canvas = document.getElementById('arboretum-canvas');
+    const ctx = canvas.getContext('2d');
+    const nameInput = document.getElementById('name-input');
+    const colorPicker = document.getElementById('color-picker');
+    const generateBtn = document.getElementById('generate-btn');
+    const plantListDiv = document.getElementById('plant-list');
+    const meteorBtn = document.getElementById('meteor-btn');
+    const lightningBtn = document.getElementById('lightning-btn');
+    const fireBtn = document.getElementById('fire-btn');
+    const golfBtn = document.getElementById('golf-btn');
+
+    const activePlants = new Map();
+    const activeCreatures = new Set();
+    const labelRects = new Map();
+    let landscapeCanvas, landscapeHeightMap, landCtx, golfHole;
+    let weather = { type: 'none', particles: [], life: 0, fade: 0, intensity: 0 };
+    let events = [];
+    let ambientLife = [];
+    let clouds = [];
+    let sparkles = [];
+    let puddles = [];
+    let globalRandom;
+    let rainCount = 0;
+    
+    let timeOfDay = 0.4;
+    let seasonTimer = 0;
+    const seasons = ['spring', 'summer', 'autumn', 'winter'];
+    let currentSeason = 'summer';
+
+    // ## 2. ISOMETRIC & COLOR ENGINES ##
+    const ISO_ANGLE = Math.atan(0.5);
+    const toScreen = (x, y, z = 0) => ({ x: (x - y) * Math.cos(ISO_ANGLE), y: (x + y) * Math.sin(ISO_ANGLE) - z });
+
+    const createPaletteFromHex = (hex, random) => {
+        const baseRgb = hexToRgb(hex);
+        if (!baseRgb) return null;
+        let baseHsl = rgbToHsl(baseRgb.r, baseRgb.g, baseRgb.b);
+        
+        switch (currentSeason) {
+            case 'autumn': baseHsl.h += 0.05 + random() * 0.1; baseHsl.s *= 1.1; break;
+            case 'winter': baseHsl.s *= 0.6; baseHsl.l *= 1.1; break;
+            case 'spring': baseHsl.s *= 1.2; baseHsl.l *= 1.1; break;
+        }
+
+        baseHsl.h += (random() - 0.5) * 0.03;
+        baseHsl.s = Math.max(0.5, Math.min(1.0, baseHsl.s * (0.9 + random() * 0.3)));
+        return {
+            leaf: [
+                rgbToString(hslToRgb(baseHsl.h, baseHsl.s * 1.1, baseHsl.l * 1.25)),
+                rgbToString(hslToRgb(baseHsl.h, baseHsl.s, baseHsl.l)),
+                rgbToString(hslToRgb(baseHsl.h, baseHsl.s * 0.95, baseHsl.l * 0.65)),
+            ],
+            bark: [
+                rgbToString(hslToRgb((baseHsl.h + 0.05) % 1, 0.2, 0.5)),
+                rgbToString(hslToRgb((baseHsl.h + 0.05) % 1, 0.25, 0.35)),
+            ],
+        };
+    };
+    
+    // ## 3. SEEDED RANDOMNESS ##
+    const createSeed = (str) => { let h = 1729033703; for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 3432918353); return (h << 13) | (h >>> 19); };
+    const createSeededRandom = (seed) => () => { seed = Math.sin(seed) * 10000; return seed - Math.floor(seed); };
+
+    // ## 4. GENERATION ENGINES ##
+
+    function generateLandscape() {
+        landscapeCanvas = document.createElement('canvas');
+        landscapeHeightMap = new Array(canvas.width).fill(0);
+        landscapeCanvas.width = canvas.width;
+        landscapeCanvas.height = canvas.height;
+        landCtx = landscapeCanvas.getContext('2d');
+        const landscapeHeight = canvas.height / 18;
+        const startY = canvas.height - landscapeHeight;
+        const hills = Array.from({length: 4}, () => ({ amp: globalRandom() * landscapeHeight / 3, freq: globalRandom() * 0.01 + 0.005, phase: globalRandom() * Math.PI * 2 }));
+        for (let x = 0; x < canvas.width; x++) {
+            let yOffset = 0;
+            hills.forEach(h => yOffset += Math.sin(x * h.freq + h.phase) * h.amp);
+            const hillTopY = startY + yOffset;
+            landscapeHeightMap[x] = hillTopY;
+            const gradient = landCtx.createLinearGradient(x, hillTopY, x, canvas.height);
+            gradient.addColorStop(0, `rgb(100, 140, 80)`);
+            gradient.addColorStop(0.5, `rgb(70, 105, 55)`);
+            gradient.addColorStop(1, `rgb(55, 75, 45)`);
+            landCtx.fillStyle = gradient;
+            landCtx.fillRect(x, hillTopY, 1, canvas.height - hillTopY);
+        }
+
+        const imageData = landCtx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            if (data[i+3] > 0) {
+                const noise = (globalRandom() - 0.5) * 30;
+                data[i] = Math.max(0, Math.min(255, data[i] + noise));
+                data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
+                data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
+            }
+        }
+        landCtx.putImageData(imageData, 0, 0);
+
+        const holeX = globalRandom() * (canvas.width - 400) + 200;
+        const holeY = landscapeHeightMap[Math.round(holeX)] + 2;
+        golfHole = {x: holeX, y: holeY, radius: 4};
+        landCtx.fillStyle = '#1a1a1a';
+        landCtx.beginPath();
+        landCtx.ellipse(holeX, holeY, golfHole.radius, golfHole.radius * 0.5, 0, 0, Math.PI * 2);
+        landCtx.fill();
+        landCtx.strokeStyle = '#cccccc';
+        landCtx.lineWidth = 1;
+        landCtx.beginPath();
+        landCtx.ellipse(holeX, holeY, golfHole.radius + 0.5, golfHole.radius * 0.5 + 0.25, 0, 0, Math.PI * 2);
+        landCtx.stroke();
+
+
+        sparkles = [];
+        for (let i = 0; i < 50; i++) {
+             const x = globalRandom() * canvas.width;
+             const y = landscapeHeightMap[Math.round(x)] + globalRandom() * (canvas.height - landscapeHeightMap[Math.round(x)]);
+             sparkles.push({ x, y, life: globalRandom() * 200, maxLife: 100 + globalRandom() * 100 });
+        }
+    }
+
+    const drawLeafMass = (pixels, cx, cy, cz, radius, color, sway, random) => {
+        const subCircles = 4 + Math.floor(random() * 5);
+        const points = new Set();
+        for (let i = 0; i < subCircles; i++) {
+            const angle = random() * Math.PI * 2;
+            const dist = random() * radius * 0.6;
+            const subRadius = radius * (0.4 + random() * 0.5);
+            const subCx = cx + Math.cos(angle) * dist;
+            const subCy = cy + Math.sin(angle) * dist;
+            for (let y = -subRadius; y <= subRadius; y++) {
+                for (let x = -subRadius; x <= subRadius; x++) {
+                    if (x * x + y * y <= subRadius * subRadius) {
+                        const key = `${Math.round(subCx + x)},${Math.round(subCy + y)}`;
+                        if (!points.has(key)) {
+                            points.add(key);
+                            pixels.push({ x: subCx + x, y: subCy + y, z: cz + (random()-0.5) * 6, color, sway });
+                        }
+                    }
+                }
+            }
+        }
+    };
+    
+    const drawTrunk = (pixels, cx, cy, cz, height, width, palette) => {
+        for (let z = cz; z < cz + height; z++) {
+            for (let x = 0; x < width; x++) {
+                for (let y = 0; y < width; y++) {
+                    pixels.push({ x: cx + x, y: cy + y, z, color: x > y ? palette.bark[0] : palette.bark[1], sway: z / (height*3) });
+                }
+            }
+        }
+    };
+    
+    const SPECIES = {
+        generateWideSpreading: (pixels, x, y, palette, random) => {
+            const trunkHeight = 25 + random() * 30;
+            const trunkWidth = 3 + Math.floor(random()*4);
+            const canopyBaseZ = trunkHeight * 0.6;
+            const numClusters = 5 + Math.floor(random() * 5);
+            const horizontalSpread = 30 + random() * 25;
+            drawTrunk(pixels, x - trunkWidth/2, y - trunkWidth/2, 0, trunkHeight, trunkWidth, palette);
+            for (let i = 0; i < numClusters; i++) {
+                const angle = (i / numClusters) * Math.PI * 2 + (random() - 0.5) * 1.5;
+                const dist = random() * horizontalSpread;
+                const clusterZ = canopyBaseZ + (random() - 0.5) * 20;
+                const clusterRadius = 15 + random() * 10;
+                drawLeafMass(pixels, x + Math.cos(angle) * dist, y + Math.sin(angle) * dist, clusterZ, clusterRadius, palette.leaf[2], 1, random);
+                drawLeafMass(pixels, x + Math.cos(angle) * dist - 3, y + Math.sin(angle) * dist - 3, clusterZ + 2, clusterRadius * 0.8, palette.leaf[1], 1.2, random);
+                drawLeafMass(pixels, x + Math.cos(angle) * dist - 5, y + Math.sin(angle) * dist - 5, clusterZ + 4, clusterRadius * 0.5, palette.leaf[0], 1.4, random);
+            }
+        },
+        generateTallSlender: (pixels, x, y, palette, random) => {
+            const trunkHeight = 60 + random() * 50;
+            const trunkWidth = 2 + Math.floor(random()*2);
+            const canopyBaseZ = trunkHeight * 0.5;
+            const numClusters = 6 + Math.floor(random() * 5);
+            const verticalSpread = 40 + random() * 25;
+            drawTrunk(pixels, x - trunkWidth/2, y - trunkWidth/2, 0, trunkHeight, trunkWidth, palette);
+            for (let i = 0; i < numClusters; i++) {
+                const angle = random() * Math.PI * 2;
+                const dist = random() * 15;
+                const clusterZ = canopyBaseZ + (i / (numClusters-1)) * verticalSpread + (random() - 0.5) * 10;
+                const clusterRadius = 12 + random() * 6;
+                drawLeafMass(pixels, x + Math.cos(angle) * dist, y + Math.sin(angle) * dist, clusterZ, clusterRadius, palette.leaf[2], 1, random);
+                drawLeafMass(pixels, x + Math.cos(angle) * dist - 2, y + Math.sin(angle) * dist - 2, clusterZ + 2, clusterRadius * 0.7, palette.leaf[1], 1.2, random);
+            }
+        },
+		/*
+		//uncomment for Saguaro cacti to be included
+        generateSaguaro: (pixels, x, y, palette, random) => {
+            const mainHeight = 70 + random() * 50;
+            const mainWidth = 6 + random() * 4;
+            const color1 = palette.leaf[0];
+            const color2 = palette.leaf[1];
+
+            const drawCactusColumn = (pxs, cx, cy, startZ, height, width, sway) => {
+                for (let z = startZ; z < startZ + height; z++) {
+                    for (let wx = -width/2; wx < width/2; wx++) {
+                        for (let wy = -width/2; wy < width/2; wy++) {
+                            if(wx*wx + wy*wy < (width/2)**2) {
+                                const rib = (Math.floor(wx*2) % 4 < 2) ? color1 : color2;
+                                pxs.push({ x: cx + wx, y: cy + wy, z, color: rib, sway: sway * (z/height) });
+                            }
+                        }
+                    }
+                }
+            };
+            
+            drawCactusColumn(pixels, x, y, 0, mainHeight, mainWidth, 0.2);
+
+            const numArms = 2 + Math.floor(random() * 2);
+            let lastDirection = random() < 0.5 ? 1 : -1;
+
+            for(let i = 0; i < numArms; i++) {
+                const armHeight = mainHeight * (0.3 + random() * 0.3);
+                const armStartZ = mainHeight * (0.35 + random() * 0.4);
+                const armWidth = mainWidth * (0.7 + random() * 0.1);
+                const direction = lastDirection;
+                lastDirection *= -1;
+                
+                const horizontalBend = armWidth + random() * 3;
+                
+                for(let h=0; h < horizontalBend; h++){
+                     const progress = h / horizontalBend;
+                     const curve = Math.sin(progress * Math.PI / 2);
+                     drawCactusColumn(pixels, x + (mainWidth/2 * direction) + (h * direction), y, armStartZ + curve * 10, 2, armWidth, 0.4);
+                }
+                drawCactusColumn(pixels, x + (mainWidth/2 * direction) + (horizontalBend * direction), y, armStartZ, armHeight, armWidth, 0.4);
+            }
+        },
+		*/
+        generateSunflower: (pixels, x, y, palette, random) => {
+            const stemHeight = 60 + random() * 20;
+            const stemWidth = 2;
+
+            const baseGreen = rgbToHsl(30,110,30);
+            baseGreen.h += (random() - 0.5) * 0.08;
+            const stemPalette = { bark: [rgbToString(hslToRgb(baseGreen.h, 0.7, 0.3)), rgbToString(hslToRgb(baseGreen.h, 0.7, 0.4))] };
+            drawTrunk(pixels, x-stemWidth/2, y-stemWidth/2, 0, stemHeight, stemWidth, stemPalette);
+
+            drawLeafMass(pixels, x, y, stemHeight * 0.4, 10, stemPalette.bark[0], 0.5, random);
+            drawLeafMass(pixels, x, y, stemHeight * 0.6, 12, stemPalette.bark[1], 0.5, random);
+
+            const headZ = stemHeight + 5;
+            const headRadius = 8 + random() * 4;
+            const facingAngle = random() * Math.PI * 2;
+            
+            const numPetals = 12 + Math.floor(random() * 10);
+            for (let i = 0; i < numPetals; i++) {
+                const angle = facingAngle + (i / numPetals) * Math.PI * 2 + (random() - 0.5) * 0.2;
+                const petalLength = headRadius * (1.8 + random() * 0.8);
+                const petalWidth = headRadius * 0.8;
+                
+                for(let l=0; l < petalLength; l++) {
+                    const progress = l / petalLength;
+                    const currentWidth = Math.sin(progress * Math.PI) * petalWidth;
+                    for(let w = -currentWidth/2; w < currentWidth/2; w++) {
+                        const px = x + Math.cos(angle) * (headRadius + l) + Math.cos(angle + Math.PI/2) * w;
+                        const py = y + Math.sin(angle) * (headRadius + l) + Math.sin(angle + Math.PI/2) * w;
+                        const pz = headZ + Math.sin(progress * Math.PI) * 5;
+                        const colorIndex = Math.min(2, Math.floor(progress * 2.9));
+                        pixels.push({ x: px, y: py, z: pz, color: palette.leaf[colorIndex], sway: 1.5 });
+                    }
+                }
+            }
+
+            const centerColors = ['#5a3a22', '#4d311f', '#3b2518', '#b41e8e', '#ed1b2f', '#ffcb05', '#89292d'];
+            for(let cx = -headRadius; cx <= headRadius; cx++) {
+                for(let cy = -headRadius; cy <= headRadius; cy++) {
+                    if(cx*cx + cy*cy <= headRadius*headRadius) {
+                        const d = Math.sqrt(cx*cx + cy*cy)/headRadius;
+                        const z = headZ + 2 + Math.cos(d * Math.PI/2)*4;
+                        const color = centerColors[Math.floor(random() * centerColors.length)];
+                        pixels.push({x: x + cx, y: y + cy, z, color, sway: 1});
+                    }
+                }
+            }
+        },
+    };
+    SPECIES.generateOak = SPECIES.generateWideSpreading;
+    SPECIES.generateMaple = SPECIES.generateWideSpreading;
+    SPECIES.generateAspen = SPECIES.generateTallSlender;
+    SPECIES.generateBirch = SPECIES.generateTallSlender;
+
+    // ## 5. CORE APPLICATION LOGIC ##
+
+    function initialize() {
+        const seed = createSeed(Date.now().toString());
+        globalRandom = createSeededRandom(seed);
+        setupCanvas();
+        generateLandscape();
+        plantListDiv.addEventListener('click', onRemoveClick);
+        generateBtn.addEventListener('click', addPlant);
+        meteorBtn.addEventListener('click', () => startEvent('meteor'));
+        lightningBtn.addEventListener('click', () => startEvent('lightning'));
+        fireBtn.addEventListener('click', () => startEvent('forestFire'));
+        golfBtn.addEventListener('click', () => startEvent('golf', 'golfers Name'));
+        updatePlantListUI();
+        animate(0);
+    }
+
+    function findNewPlantPosition(plantName) {
+        let screenX, screenY, textRect;
+        let attempts = 0;
+        const maxAttempts = 50;
+        while (attempts < maxAttempts) {
+            screenX = globalRandom() * (canvas.width - 400) + 200;
+            const groundTopY = landscapeHeightMap[Math.round(screenX)];
+            const landscapeBottomY = canvas.height;
+            screenY = groundTopY + globalRandom() * (landscapeBottomY - groundTopY - 60);
+
+            ctx.font = '21px "Tiny5", sans-serif';
+            const textMetrics = ctx.measureText(plantName);
+            textRect = {
+                x: screenX - textMetrics.width / 2, y: screenY + 10,
+                width: textMetrics.width, height: 12
+            };
+            let isOverlapping = false;
+            for (const rect of labelRects.values()) {
+                if (textRect.x < rect.x + rect.width && textRect.x + textRect.width > rect.x &&
+                    textRect.y < rect.y + rect.height && textRect.y + textRect.height > rect.y) {
+                    isOverlapping = true;
+                    break;
+                }
+            }
+            if (!isOverlapping) break;
+            attempts++;
+        }
+        return { screenX, screenY, textRect };
+    }
+
+    function addPlant(thechattername, thehexvalue) { // **LINE CHANGED MUST UPDATE**
+        const name = thechattername; //nameInput.value || 'My Plant';  **LINE CHANGED MUST UPDATE**
+        const hex = thehexvalue; //colorPicker.value;  **LINE CHANGED MUST UPDATE**
+        const plantSeed = createSeed(name + hex + globalRandom());
+        const plantRandom = createSeededRandom(plantSeed);
+
+        const pixels = [];
+        const palette = createPaletteFromHex(hex, plantRandom);
+        if (!palette) return;
+
+        const speciesKeys = Object.keys(SPECIES);
+        const chosenSpeciesKey = speciesKeys[Math.floor(plantRandom() * speciesKeys.length)];
+        const generatorFn = SPECIES[chosenSpeciesKey];
+
+        const { screenX, screenY, textRect } = findNewPlantPosition(name);
+
+        generatorFn(pixels, 0, 0, palette, plantRandom);
+
+        const id = `${Date.now()}-${name}`;
+        const newPlant = {
+            id, name, status: 'growing',
+            pixels: [], allPixels: pixels,
+            spriteCanvas: null, shadowCanvas: null, spriteOffset: {x: 0, y: 0},
+            growIndex: 0,
+            screenX, screenY, textRect,
+            sway: 0.5 + plantRandom(), life: 0,
+            regrowTime: 0, snowAccumulation: 0, rotation: 0, isPermanentRemoval: false
+        };
+        activePlants.set(id, newPlant);
+        labelRects.set(id, textRect);
+        updatePlantListUI();
+    }
+
+    function animate(time) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        updateTimeAndLighting(time);
+
+        if (landscapeCanvas) ctx.drawImage(landscapeCanvas, 0, 0);
+
+        updateAndDrawSparkles();
+        updateAndDrawPuddles();
+
+        if (globalRandom() < 0.0005 && weather.type === 'none') {
+            const weatherOptions = ['rain', 'snow', 'windy'];
+            if (currentSeason === 'winter') weatherOptions.push('snow', 'snow');
+            startWeather(weatherOptions[Math.floor(globalRandom() * weatherOptions.length)]);
+        }
+        if (globalRandom() < 0.00005 && events.length === 0) startEvent('meteor');
+        if (globalRandom() < 0.0009 && activeCreatures.size < 11) startEvent('creature');
+        if (globalRandom() < 0.008 && ambientLife.length < 15) startAmbientLife(time);
+        
+        const renderables = [...activePlants.values(), ...activeCreatures, ...events.filter(e => e.type === 'golfBall' || e.type === 'golfer' || e.type === 'holeInOne')];
+        renderables.sort((a, b) => (a.screenY + (a.z || 0)) - (b.screenY + (b.z || 0)));
+
+        for (const item of renderables) {
+            ctx.save();
+            if(item.type === 'creature') {
+                updateAndDrawCreature(item, time);
+            } else if (item.type === 'golfBall') {
+                updateAndDrawGolfball(item);
+            } else if (item.type === 'golfer') {
+                updateAndDrawGolfer(item);
+            } else if (item.type === 'holeInOne') {
+                updateAndDrawHoleInOne(item);
+            } else {
+                const plant = item;
+                updatePlantStatus(plant, time);
+                if (plant.status === 'destroyed') {
+                    ctx.restore();
+                    continue;
+                }
+
+                const swayOffset = Math.sin(time / 2500 + plant.screenX / 50) * plant.sway + (weather.type === 'windy' ? weather.intensity * 3 * Math.sin(time / 500 + plant.screenY / 50) : 0);
+                                
+                if (plant.status === 'falling' || plant.status === 'decaying') {
+                    ctx.translate(plant.screenX + swayOffset, plant.screenY);
+                    ctx.rotate(plant.rotation);
+                    ctx.translate(-(plant.screenX + swayOffset), -plant.screenY);
+                }
+                if (plant.status === 'decaying') {
+                    ctx.globalAlpha = Math.max(0, 1 - (plant.decayStartTime - plant.life) / 120);
+                }
+
+                if (plant.spriteCanvas) {
+                    const drawX = Math.round(plant.screenX + plant.spriteOffset.x + swayOffset);
+                    const drawY = Math.round(plant.screenY + plant.spriteOffset.y);
+
+                    if (plant.status === 'burnt') {
+                        const alpha = Math.max(0, plant.life / 120);
+                        ctx.save();
+                        ctx.globalAlpha = alpha;
+                        ctx.drawImage(plant.spriteCanvas, drawX, drawY);
+                        ctx.globalCompositeOperation = 'source-atop';
+                        ctx.fillStyle = 'rgb(50, 50, 50)';
+                        ctx.shadowColor = 'rgb(50, 50, 50)';
+                        ctx.shadowBlur = 20;
+                        ctx.drawImage(plant.spriteCanvas, drawX, drawY);
+                        ctx.restore();
+                    } else {
+                         ctx.drawImage(plant.spriteCanvas, drawX, drawY);
+                    }
+                } else {
+                    for (const pixel of plant.pixels) {
+                        const screenPos = toScreen(pixel.x, pixel.y, pixel.z);
+                        ctx.fillStyle = pixel.color;
+                        ctx.fillRect(Math.round(plant.screenX + screenPos.x + swayOffset), Math.round(plant.screenY + screenPos.y), 1, 1);
+                    }
+                }
+
+                if (plant.snowAccumulation > 0 && plant.spriteCanvas) {
+                    ctx.save();
+                    ctx.globalAlpha = plant.snowAccumulation * 0.8;
+                    ctx.fillStyle = 'white';
+                    ctx.shadowColor = 'white';
+                    ctx.shadowBlur = 25;
+                    const drawX = Math.round(plant.screenX + plant.spriteOffset.x + swayOffset);
+                    const drawY = Math.round(plant.screenY + plant.spriteOffset.y);
+                    ctx.drawImage(plant.spriteCanvas, drawX, drawY);
+                    ctx.restore();
+                }
+                if (plant.status === 'burning') {
+                    for(let i = 0; i < 30; i++){
+                        ctx.fillStyle = `rgba(255, ${100 + globalRandom() * 100}, 0, ${globalRandom() * 0.5 + 0.3})`;
+                        ctx.beginPath();
+                        ctx.arc(plant.screenX + swayOffset + (globalRandom() - 0.5) * 25, plant.screenY - (plant.spriteCanvas ? plant.spriteCanvas.height/2 : 20) + (globalRandom() - 0.5) * 40, globalRandom() * 15, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                }
+                
+                if (plant.status !== 'falling' && plant.status !== 'decaying' && plant.status !== 'destroyed' && plant.status !== 'burnt') {
+                    ctx.font = '21px "Tiny5", sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                    ctx.fillText(plant.name, plant.screenX + swayOffset + 1, plant.screenY + 16 + 1);
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(plant.name, plant.screenX + swayOffset, plant.screenY + 15);
+                }
+            }
+            ctx.restore();
+        }
+        
+        updateAndDrawClouds();
+        updateAndDrawWeather();
+        updateAndDrawEvents(time);
+        updateAndDrawAmbientLife(time);
+        requestAnimationFrame(animate);
+    }
+    
+    // ## 6. ALL OTHER FUNCTIONS ##
+
+    function updatePlantStatus(plant, time) {
+        if (plant.status === 'growing') {
+            const growAmount = Math.ceil(plant.allPixels.length / 180);
+            plant.growIndex = Math.min(plant.growIndex + growAmount, plant.allPixels.length);
+            plant.pixels = plant.allPixels.slice(0, plant.growIndex);
+            if (plant.growIndex >= plant.allPixels.length) {
+                plant.status = 'caching';
+            }
+        }
+        if (plant.status === 'caching') {
+            const bounds = plant.allPixels.reduce((b, p) => {
+                const s = toScreen(p.x, p.y, p.z);
+                return { minX: Math.min(b.minX, s.x), maxX: Math.max(b.maxX, s.x), minY: Math.min(b.minY, s.y), maxY: Math.max(b.maxY, s.y) };
+            }, { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity });
+
+            const spriteW = Math.ceil(bounds.maxX - bounds.minX) + 2;
+            const spriteH = Math.ceil(bounds.maxY - bounds.minY) + 2;
+            if (spriteW > 0 && spriteH > 0) {
+                plant.spriteCanvas = document.createElement('canvas');
+                plant.spriteCanvas.width = spriteW;
+                plant.spriteCanvas.height = spriteH;
+                const spriteCtx = plant.spriteCanvas.getContext('2d');
+                
+                plant.allPixels.forEach(p => {
+                    const s = toScreen(p.x, p.y, p.z);
+                    spriteCtx.fillStyle = p.color;
+                    spriteCtx.fillRect(s.x - bounds.minX, s.y - bounds.minY, 0.94, 0.94);
+                });
+
+                plant.spriteOffset = {x: bounds.minX, y: bounds.minY};
+            }
+            plant.pixels = [];
+            plant.status = 'idle';
+            updatePlantListUI();
+        }
+        if (plant.status === 'falling') {
+            plant.rotation += 0.01;
+            if (plant.rotation > Math.PI / 2) {
+                plant.status = 'decaying';
+                plant.life = 120;
+                plant.decayStartTime = plant.life;
+                for (let i = 0; i < 50; i++) {
+                    ambientLife.push({
+                        type: 'leaf',
+                        x: plant.screenX + (globalRandom() - 0.5) * 30,
+                        y: plant.screenY - 30,
+                        vx: (globalRandom() - 0.5) * 2,
+                        vy: globalRandom() * 1 + 0.5,
+                        life: 200,
+                        rotation: 0,
+                        rotSpeed: (globalRandom() - 0.5) * 0.1
+                    });
+                }
+            }
+        }
+        if (plant.status === 'decaying') {
+            plant.life--;
+            if (plant.life <= 0) {
+                plant.status = 'destroyed';
+                if (plant.isPermanentRemoval) {
+                    activePlants.delete(plant.id);
+                    labelRects.delete(plant.id);
+                    updatePlantListUI();
+                }
+            }
+        }
+        if (plant.status === 'burning') {
+            plant.life--;
+            if (plant.life <= 0) {
+                plant.status = 'burnt';
+                plant.life = 120;
+            }
+        }
+        if (plant.status === 'burnt') {
+            plant.life--;
+            if (plant.life <= 0) {
+                plant.status = 'destroyed';
+                if (!plant.isPermanentRemoval) {
+                     plant.regrowTime = time + 60 * 1000;
+                }
+            }
+        }
+        if (plant.status === 'destroyed' && plant.regrowTime > 0 && time > plant.regrowTime && !plant.isPermanentRemoval) {
+            labelRects.delete(plant.id);
+            if (globalRandom() < 0.5) {
+                const { screenX, screenY, textRect } = findNewPlantPosition(plant.name);
+                plant.screenX = screenX;
+                plant.screenY = screenY;
+                plant.textRect = textRect;
+            }
+            labelRects.set(plant.id, plant.textRect);
+
+            plant.status = 'growing';
+            plant.growIndex = 0;
+            plant.rotation = 0;
+            plant.snowAccumulation = 0;
+            plant.regrowTime = 0;
+            plant.life = 0;
+            plant.spriteCanvas = null;
+            updatePlantListUI();
+        }
+    }
+
+    function onRemoveClick(e) {
+        if (e.target.classList.contains('remove-btn')) {
+            const id = e.target.dataset.id;
+            const plant = activePlants.get(id);
+            if (plant && (plant.status === 'idle' || plant.status === 'growing')) {
+                plant.isPermanentRemoval = true;
+                plant.status = 'falling';
+                updatePlantListUI();
+            }
+        }
+    }
+
+    function startWeather(type) {
+        if (weather.type !== 'none') return;
+        weather.type = type;
+        weather.life = 1200 + globalRandom() * 1200;
+        weather.fade = 60;
+        weather.particles = [];
+        let count = 0;
+        if (type === 'snow') count = 250;
+        if (type === 'rain') count = 150;
+        if (type === 'windy') count = 50;
+        for (let i = 0; i < count; i++) {
+            weather.particles.push({
+                x: globalRandom() * canvas.width, y: -10,
+                vx: type === 'snow' ? (globalRandom() - 0.5) * 0.5 : (type === 'windy' ? 2 + globalRandom() * 2 : 0),
+                vy: type === 'snow' ? globalRandom() * 0.5 + 0.5 : (type === 'windy' ? (globalRandom() - 0.5) * 0.5 : globalRandom() * 4 + 4),
+                opacity: globalRandom() * 0.5 + 0.3,
+                color: `hsl(80, 30%, ${60 + globalRandom()*20}%)`
+            });
+        }
+        if (type === 'rain') {
+            rainCount++;
+            for(let i=0; i < 5; i++) {
+                if(globalRandom() < 0.5) {
+                    const x = globalRandom() * canvas.width;
+                    puddles.push({
+                        x: x,
+                        y: landscapeHeightMap[Math.round(x)] + globalRandom() * 20,
+                        radius: 20 + globalRandom() * 30,
+                        life: 2000 + globalRandom() * 1000
+                    });
+                }
+            }
+        }
+    }
+
+    function updateAndDrawWeather() {
+        if (weather.type === 'none' && weather.fade <= 0) return;
+        if (weather.life <= 0) {
+            weather.fade--;
+            if (weather.fade <= 0) {
+                weather.type = 'none';
+                if (rainCount > 1) erodeLandscape();
+                return;
+            }
+        } else {
+            weather.life--;
+        }
+
+        const fadeMultiplier = Math.min(1, weather.life / 60, weather.fade / 60);
+        weather.intensity = fadeMultiplier;
+
+        ctx.fillStyle = weather.type === 'snow' ? `rgba(220, 230, 240, ${0.5 * fadeMultiplier})` : `rgba(180, 200, 220, ${0.6 * fadeMultiplier})`;
+        ctx.strokeStyle = `rgba(180, 200, 220, ${0.6 * fadeMultiplier})`;
+        weather.particles.forEach(p => {
+            p.x += p.vx * weather.intensity; p.y += p.vy;
+            const drawX = Math.round(p.x);
+            const drawY = Math.round(p.y);
+            if (weather.type === 'snow') {
+                ctx.beginPath(); ctx.arc(drawX, drawY, globalRandom() * 1.5 + 1, 0, Math.PI * 2); ctx.fill();
+            } else if (weather.type === 'rain') {
+                ctx.beginPath(); ctx.moveTo(drawX, drawY); ctx.lineTo(drawX, drawY + 10); ctx.stroke();
+            } else if (weather.type === 'windy') {
+                ctx.fillStyle = p.color;
+                ctx.fillRect(drawX, drawY, 5, 1);
+            }
+            if (p.y > canvas.height || p.x > canvas.width || p.x < 0) {
+                p.y = globalRandom() * -20;
+                p.x = weather.type === 'windy' ? -10 : globalRandom() * canvas.width;
+            }
+        });
+
+        activePlants.forEach(plant => {
+            if (weather.type === 'snow' && weather.fade > 0) {
+                plant.snowAccumulation = Math.min(1, (plant.snowAccumulation || 0) + 0.001 * fadeMultiplier);
+            } else {
+                plant.snowAccumulation = Math.max(0, (plant.snowAccumulation || 0) - 0.01);
+            }
+        });
+    }
+
+    function startEvent(type, golfyName) {
+        if (type === 'meteor') {
+            const targetX = globalRandom() * (canvas.width - 400) + 2;
+            const targetY = landscapeHeightMap[Math.round(targetX)];
+            const meteor = {
+                type, stage: 'falling', life: 520,
+                x: targetX + 400, y: -100,
+                vx: -2, vy: (targetY + 100) / 300,
+                targetX, targetY, trail: []
+            };
+            events.push(meteor);
+        } else if (type === 'creature') {
+            const startSide = globalRandom() < 0.5 ? -40 : canvas.width + 40;
+            const creatureTypes = [
+				'rabbit1', 'rabbit2', 'rabbit3', 'rabbit4', 'rabbit5', 'rabbit6', 
+				'rabbit7', 'rabbit8', 'rabbit9', 'rabbit10', 'rabbit11', 'rabbit12', 
+				'rabbit13', 'rabbit14', 'rabbit15', 'rabbit16', 'rabbit17', 'rabbit18', 
+				'rabbit19', 'rabbit20', 'rabbit21', 'rabbit22', 'rabbit23', 'rabbit24', 
+				'rabbit25', 'rabbit26', 'rabbit27', 'rabbit28', 'rabbit29', 'rabbit30', 
+				'rabbit31', 'rabbit32', 'rabbit33', 'rabbit34', 'rabbit35', 'rabbit36'
+			];
+            const creatureType = creatureTypes[Math.floor(globalRandom() * creatureTypes.length)];
+            
+            const newCreature = {
+                id: Date.now(),
+                type: 'creature',
+                creatureType: creatureType,
+                x: startSide,
+                y: landscapeHeightMap[Math.round(startSide)] || (canvas.height - canvas.height / 4),
+                screenY: 0,
+                targetX: globalRandom() * (canvas.width - 200) + 100,
+                targetY: 0,
+                speed: (startSide < 0 ? 1 : -1) * (0.3 + globalRandom() * 0.4),
+                life: 3000 + globalRandom() * 2000,
+                state: 'roaming',
+                state_timer: 200 + globalRandom() * 200,
+                animation_timer: 0,
+            };
+            newCreature.targetY = landscapeHeightMap[Math.round(newCreature.targetX)] || newCreature.y;
+            activeCreatures.add(newCreature);
+        } else if (type === 'aurora') {
+            const aurora = { type, life: 1500, bands: [] };
+            for(let i=0; i<3; i++) {
+                aurora.bands.push({
+                    y: globalRandom() * canvas.height/3,
+                    color: `hsla(${100 + globalRandom() * 60}, 50%, 60%, 0.1)`,
+                    points: Array.from({length: 10}, (_, j) => ({
+                        x: (j / 9) * canvas.width,
+                        y: 0,
+                        speed: (globalRandom() - 0.5) * 0.5
+                    }))
+                });
+            }
+            events.push(aurora);
+        } else if (type === 'lightning') {
+            const targetX = globalRandom() * (canvas.width - 400) + 200;
+            const targetPlant = [...activePlants.values()].find(p => p.status === 'idle' && Math.abs(p.screenX - targetX) < 20);
+            events.push({ type, life: 30, x: targetX, targetPlant });
+        } else if (type === 'forestFire') {
+            const plantArray = [...activePlants.values()].filter(p => p.status === 'idle');
+            if (plantArray.length > 0) {
+                const targetPlant = plantArray[Math.floor(globalRandom() * plantArray.length)];
+                targetPlant.status = 'burning';
+                targetPlant.life = 300 + globalRandom() * 120;
+            }
+        } else if (type === 'golf') {
+            const golferName = golfyName || 'Golfer';
+            const fromLeft = globalRandom() < 0.5;
+            const startX = fromLeft ? -50 : canvas.width + 50;
+            const targetX = fromLeft ? 150 + globalRandom() * 100 : canvas.width - (150 + globalRandom() * 100);
+            
+            events.push({
+                type: 'golfer',
+                id: Date.now(),
+                name: golferName,
+                shirtColor: `hsl(${globalRandom() * 360}, 70%, 60%)`,
+                stage: 'walking-in',
+                x: startX, y: 0, screenY: 0, targetX: targetX,
+                speed: fromLeft ? 1.5 : -1.5,
+                life: 10000,
+                animation_timer: 0,
+                ballStruck: false,
+            });
+        }
+    }
+
+    function updateAndDrawEvents(time) {
+        events = events.filter(e => e.life > 0);
+        events.forEach(e => {
+            e.life--;
+            if (e.type === 'meteor') {
+                updateAndDrawMeteor(e);
+            } else if (e.type === 'lightning') {
+                updateAndDrawLightning(e);
+            } else if (e.type === 'aurora') {
+                updateAndDrawAurora(e);
+            } else if (e.type === 'golfer') {
+                updateAndDrawGolfer(e);
+            } else if (e.type === 'holeInOne') {
+                updateAndDrawHoleInOne(e);
+            }
+        });
+    }
+
+/*    function updateAndDrawMeteor(e) {
+        if (e.stage === 'falling') {
+            e.x += e.vx; e.y += e.vy;
+            e.trail.push({x: e.x, y: e.y, life: 50});
+            ctx.fillStyle = '#654321'; ctx.beginPath(); ctx.arc(e.x, e.y, 5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'orange'; ctx.beginPath(); ctx.arc(e.x, e.y, 4, 0, Math.PI * 2); ctx.fill();
+            e.trail.forEach(t => {
+                t.life--;
+                ctx.fillStyle = `rgba(255, 180, 80, ${t.life/50})`;
+                ctx.beginPath(); ctx.arc(t.x, t.y, 2, 0, Math.PI*2); ctx.fill();
+            });
+            e.trail = e.trail.filter(t => t.life > 0);
+            if (e.y >= e.targetY) {
+                e.stage = 'impact'; e.life = 60;
+                activePlants.forEach(plant => {
+                    const dist = Math.hypot(plant.screenX - e.targetX, plant.screenY - e.targetY);
+                    if (dist < 40 && plant.status === 'idle') {
+                        plant.status = 'burning';
+                        plant.life = 300 + globalRandom() * 120;
+                    }
+                });
+            }
+        } else if (e.stage === 'impact') {
+            if (e.life === 59) {
+                const palettes = [ { floor: '#221a14', rim: '#4a3a2a' }, { floor: '#3d3d3d', rim: '#555555' }, { floor: '#402E1D', rim: '#624A32' }, { floor: '#1a1a1a', rim: '#333333' } ];
+                const palette = palettes[Math.floor(globalRandom() * palettes.length)];
+                
+                const cx = e.targetX;
+                const cy = e.targetY + 5;
+                const baseRadius = 15 + globalRandom() * 100;
+                const complexity = 5 + globalRandom() * 4;
+                const jitter = 0.1 + globalRandom() * 0.4;
+                const phase1 = globalRandom() * 10;
+                const phase2 = globalRandom() * 10;
+                
+                const getLumpyRadius = (angle) => {
+                     const noise = (Math.sin(angle * complexity + phase1) + Math.cos(angle * (complexity/2) + phase2)) / 2;
+                     return baseRadius * (1 + noise * jitter);
+                };
+
+                const maxRadius = baseRadius * (1 + jitter) + 3;
+
+                for (let x = Math.floor(cx - maxRadius); x <= Math.ceil(cx + maxRadius); x++) {
+                    if (x < 0 || x >= landscapeHeightMap.length) continue;
+                    for (let y = Math.floor(cy - maxRadius); y <= Math.ceil(cy + maxRadius); y++) {
+                        if (y >= landscapeHeightMap[x]) {
+                            const angle = Math.atan2(y - cy, x - cx);
+                            const lumpyRadius = getLumpyRadius(angle);
+                            const lumpyRim = lumpyRadius + 2 + globalRandom();
+                            const distSq = (x - cx) ** 2 + (y - cy) ** 2;
+
+                            if (distSq <= lumpyRadius ** 2) {
+                                landCtx.fillStyle = palette.floor;
+                                landCtx.fillRect(x, y, 1, 1);
+								landCtx.globalAlpha = Math.random() * (0.8 - 0.3) + 0.3;
+                            } else if (distSq <= lumpyRim ** 2) {
+                                landCtx.fillStyle = palette.rim;
+                                landCtx.fillRect(x, y, 1, 1);
+								landCtx.globalAlpha = Math.random() * (0.8 - 0.3) + 0.3;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            ctx.lineTo(0, landscapeHeightMap[0]);
+            for (let x = 1; x < canvas.width; x++) { if (landscapeHeightMap[x]) ctx.lineTo(x, landscapeHeightMap[x]); }
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.closePath();
+            ctx.clip();
+            
+            const progress = 1 - e.life / 60;
+            ctx.fillStyle = `rgba(255, 200, 100, ${1 - progress})`;
+            ctx.beginPath();
+            ctx.arc(e.targetX, e.targetY, progress * 40, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+    }*/
+	
+	/**
+	 * A selection of color palettes for the meteor's appearance.
+	 * Each meteor will be randomly assigned one of these palettes upon creation.
+	 */
+	const meteorFirePalettes = [
+		// Classic Fire
+		{
+			core: '#442211',      // Dark, rocky brown
+			glow: '#FFA500',      // Orange
+			trail: ['#FFD700', '#FFA500', '#FF8C00'] // Gold, Orange, DarkOrange
+		},
+		// Arcane Purple
+		{
+			core: '#2C1E3C',      // Dark purple
+			glow: '#BA55D3',      // Medium Orchid
+			trail: ['#DA70D6', '#BA55D3', '#9932CC'] // Orchid, MediumOrchid, DarkOrchid
+		},
+		// Ice Comet
+		{
+			core: '#D4F0F0',      // Very light, icy blue-grey
+			glow: '#87CEEB',      // Sky Blue
+			trail: ['#FFFFFF', '#E0FFFF', '#AFEEEE'] // White, LightCyan, PaleTurquoise
+		},
+		// Fel/Green Fire
+		{
+			core: '#2A3A25',      // Dark, mossy green
+			glow: '#7CFC00',      // Lawn Green
+			trail: ['#ADFF2F', '#7FFF00', '#32CD32'] // GreenYellow, Chartreuse, LimeGreen
+		},
+		// --- TOYO 94 Color Finder Entries ---
+		{ core: '#d0006f', glow: '#ff3d99', trail: ['#ff6bb0', '#ff3d99', '#d0006f'] },
+		{ core: '#c20082', glow: '#f53dac', trail: ['#f56bc6', '#f53dac', '#c20082'] },
+		{ core: '#d039a3', glow: '#ff6cb9', trail: ['#ff8ec9', '#ff6cb9', '#d039a3'] },
+		{ core: '#9f5382', glow: '#ca80a8', trail: ['#dcaebf', '#ca80a8', '#9f5382'] },
+		{ core: '#b86096', glow: '#e58cb9', trail: ['#f0aec9', '#e58cb9', '#b86096'] },
+		{ core: '#da5bae', glow: '#ff88d0', trail: ['#ffa4da', '#ff88d0', '#da5bae'] },
+		{ core: '#b0006f', glow: '#de3d99', trail: ['#e86bb0', '#de3d99', '#b0006f'] },
+		{ core: '#c60078', glow: '#f73da2', trail: ['#f76bab', '#f73da2', '#c60078'] },
+		{ core: '#cc5d9d', glow: '#fe8ac3', trail: ['#fea6d2', '#fe8ac3', '#cc5d9d'] },
+		{ core: '#db4e9a', glow: '#ff7bbe', trail: ['#ff9dcf', '#ff7bbe', '#db4e9a'] },
+		{ core: '#da388c', glow: '#ff62ae', trail: ['#ff88c2', '#ff62ae', '#da388c'] },
+		{ core: '#e675a9', glow: '#ff9bc9', trail: ['#ffb6d9', '#ff9bc9', '#e675a9'] },
+		{ core: '#c2002f', glow: '#f53d5f', trail: ['#f56b83', '#f53d5f', '#c2002f'] },
+		{ core: '#d3003a', glow: '#ff3d68', trail: ['#ff6b8a', '#ff3d68', '#d3003a'] },
+		{ core: '#e00034', glow: '#ff3d63', trail: ['#ff6b86', '#ff3d63', '#e00034'] },
+		{ core: '#c50026', glow: '#f63d58', trail: ['#f66b7e', '#f63d58', '#c50026'] },
+		{ core: '#a5001a', glow: '#d13d50', trail: ['#dc6b79', '#d13d50', '#a5001a'] },
+		{ core: '#d80017', glow: '#ff3d4f', trail: ['#ff6b79', '#ff3d4f', '#d80017'] },
+		{ core: '#dd0015', glow: '#ff3d4d', trail: ['#ff6b78', '#ff3d4d', '#dd0015'] },
+		{ core: '#9d3527', glow: '#c66258', trail: ['#d5857c', '#c66258', '#9d3527'] },
+		{ core: '#d45a32', glow: '#ff8662', trail: ['#ffa386', '#ff8662', '#d45a32'] },
+		{ core: '#da7128', glow: '#ff9858', trail: ['#ffb282', '#ff9858', '#da7128'] },
+		{ core: '#e0861f', glow: '#ffaa4e', trail: ['#ffc078', '#ffaa4e', '#e0861f'] },
+		{ core: '#e28f1c', glow: '#ffb04a', trail: ['#ffc572', '#ffb04a', '#e28f1c'] },
+		{ core: '#c94f00', glow: '#fa7e3d', trail: ['#fa9c6b', '#fa7e3d', '#c94f00'] },
+		{ core: '#d05d00', glow: '#ff8c3d', trail: ['#ffa86b', '#ff8c3d', '#d05d00'] },
+		{ core: '#d86d00', glow: '#ff983d', trail: ['#ffb06b', '#ff983d', '#d86d00'] },
+		{ core: '#e07d00', glow: '#ffa33d', trail: ['#ffb96b', '#ffa33d', '#e07d00'] },
+		{ core: '#c64300', glow: '#f7733d', trail: ['#f7916b', '#f7733d', '#c64300'] },
+		{ core: '#cd5800', glow: '#fe853d', trail: ['#fea06b', '#fe853d', '#cd5800'] },
+		{ core: '#d56900', glow: '#ff953d', trail: ['#ffad6b', '#ff953d', '#d56900'] },
+		{ core: '#dd7a00', glow: '#ffa53d', trail: ['#ffba6b', '#ffa53d', '#dd7a00'] },
+		{ core: '#b96500', glow: '#e6923d', trail: ['#eda96b', '#e6923d', '#b96500'] },
+		{ core: '#c27c00', glow: '#f4a53d', trail: ['#f4b96b', '#f4a53d', '#c27c00'] },
+		{ core: '#c89000', glow: '#f9b93d', trail: ['#f9ca6b', '#f9b93d', '#c89000'] },
+		{ core: '#d0a500', glow: '#ffcb3d', trail: ['#ffda6b', '#ffcb3d', '#d0a500'] },
+		{ core: '#d8ba00', glow: '#ffe53d', trail: ['#ffee6b', '#ffe53d', '#d8ba00'] },
+		{ core: '#b08400', glow: '#dcae3d', trail: ['#e6c16b', '#dcae3d', '#b08400'] },
+		{ core: '#b59200', glow: '#e1b63d', trail: ['#eac66b', '#e1b63d', '#b59200'] },
+		{ core: '#bca100', glow: '#eac63d', trail: ['#eed36b', '#eac63d', '#bca100'] },
+		{ core: '#c3b100', glow: '#f3d93d', trail: ['#f3e26b', '#f3d93d', '#c3b100'] },
+		{ core: '#898100', glow: '#ada73d', trail: ['#c0bc6b', '#ada73d', '#898100'] },
+		{ core: '#968f00', glow: '#bbb43d', trail: ['#cac56b', '#bbb43d', '#968f00'] },
+		{ core: '#a39d00', glow: '#c9c23d', trail: ['#d8d36b', '#c9c23d', '#a39d00'] },
+		{ core: '#b1ac00', glow: '#ddd63d', trail: ['#e6e06b', '#ddd63d', '#b1ac00'] },
+		{ core: '#00613d', glow: '#3d906e', trail: ['#6baf91', '#3d906e', '#00613d'] },
+		{ core: '#006c45', glow: '#3d9b76', trail: ['#6bb797', '#3d9b76', '#006c45'] },
+		{ core: '#00784d', glow: '#3da67c', trail: ['#6bc09d', '#3da67c', '#00784d'] },
+		{ core: '#008454', glow: '#3db182', trail: ['#6bc9a3', '#3db182', '#008454'] },
+		{ core: '#008a44', glow: '#3db275', trail: ['#6bc696', '#3db275', '#008a44'] },
+		{ core: '#008558', glow: '#3db286', trail: ['#6bc6a6', '#3db286', '#008558'] },
+		{ core: '#008d6c', glow: '#3db797', trail: ['#6bcbb0', '#3db797', '#008d6c'] },
+		{ core: '#00957b', glow: '#3dbda2', trail: ['#6bd0b8', '#3dbda2', '#00957b'] },
+		{ core: '#00998c', glow: '#3dc1b1', trail: ['#6bd4c2', '#3dc1b1', '#00998c'] },
+		{ core: '#007b71', glow: '#3da99d', trail: ['#6bc2b7', '#3da99d', '#007b71'] },
+		{ core: '#00807b', glow: '#3daea8', trail: ['#6bc6be', '#3daea8', '#00807b'] },
+		{ core: '#008886', glow: '#3db4af', trail: ['#6bc9c3', '#3db4af', '#008886'] },
+		{ core: '#008f91', glow: '#3dbab5', trail: ['#6bd0c9', '#3dbab5', '#008f91'] },
+		{ core: '#008496', glow: '#3db0c0', trail: ['#6bc4d0', '#3db0c0', '#008496'] },
+		{ core: '#00748e', glow: '#3da1b8', trail: ['#6bbcc9', '#3da1b8', '#00748e'] },
+		{ core: '#006887', glow: '#3d96b1', trail: ['#6badc4', '#3d96b1', '#006887'] },
+		{ core: '#005b81', glow: '#3d8aac', trail: ['#6ba6bf', '#3d8aac', '#005b81'] },
+		{ core: '#004f7c', glow: '#3d7da6', trail: ['#6b9cbb', '#3d7da6', '#004f7c'] },
+		{ core: '#0058a5', glow: '#3d86cd', trail: ['#6ba5d8', '#3d86cd', '#0058a5'] },
+		{ core: '#005cad', glow: '#3d8ad4', trail: ['#6ba8dc', '#3d8ad4', '#005cad'] },
+		{ core: '#0060b5', glow: '#3d8fde', trail: ['#6baee6', '#3d8fde', '#0060b5'] },
+		{ core: '#2168c1', glow: '#5395ec', trail: ['#7cacf1', '#5395ec', '#2168c1'] },
+		{ core: '#426ec9', glow: '#6f98f6', trail: ['#92b0f8', '#6f98f6', '#426ec9'] },
+		{ core: '#3f5ea5', glow: '#6e89cd', trail: ['#91a5d8', '#6e89cd', '#3f5ea5'] },
+		{ core: '#4b55a5', glow: '#7881cd', trail: ['#9aa0d8', '#7881cd', '#4b55a5'] },
+		{ core: '#574ca6', glow: '#8379cf', trail: ['#a29bd9', '#8379cf', '#574ca6'] },
+		{ core: '#6344a6', glow: '#8e71cf', trail: ['#ab95d9', '#8e71cf', '#6344a6'] },
+		{ core: '#5f2484', glow: '#8e56b0', trail: ['#ac81c8', '#8e56b0', '#5f2484'] },
+		{ core: '#733791', glow: '#9f64b8', trail: ['#b889ca', '#9f64b8', '#733791'] },
+		{ core: '#88489d', glow: '#b073c1', trail: ['#c695d1', '#b073c1', '#88489d'] },
+		{ core: '#9d59aa', glow: '#c384d0', trail: ['#d4a2da', '#c384d0', '#9d59aa'] },
+		{ core: '#811981', glow: '#ad4eab', trail: ['#c479c3', '#ad4eab', '#811981'] },
+		{ core: '#9a218f', glow: '#c251b6', trail: ['#d279c9', '#c251b6', '#9a218f'] },
+		{ core: '#b32b9e', glow: '#de59c4', trail: ['#e87fd3', '#de59c4', '#b32b9e'] },
+		{ core: '#c332a9', glow: '#f05ecf', trail: ['#f983da', '#f05ecf', '#c332a9'] },
+		{ core: '#7c3830', glow: '#a6655e', trail: ['#bb8882', '#a6655e', '#7c3830'] },
+		{ core: '#8d4735', glow: '#b57464', trail: ['#c9968a', '#b57464', '#8d4735'] },
+		{ core: '#9f573b', glow: '#c8826a', trail: ['#d8a18f', '#c8826a', '#9f573b'] },
+		{ core: '#b26841', glow: '#dd936e', trail: ['#e8ad92', '#dd936e', '#b26841'] },
+		{ core: '#704f2f', glow: '#9a7c5d', trail: ['#b29a81', '#9a7c5d', '#704f2f'] },
+		{ core: '#815f33', glow: '#ab8a62', trail: ['#c1a687', '#ab8a62', '#815f33'] },
+		{ core: '#926f37', glow: '#bb9865', trail: ['#cca B8b', '#bb9865', '#926f37'] },
+		{ core: '#a5803c', glow: '#d0a669', trail: ['#dcb98d', '#d0a669', '#a5803c'] },
+		{ core: '#654235', glow: '#927166', trail: ['#b3968d', '#927166', '#654235'] },
+		{ core: '#4d392e', glow: '#7a675d', trail: ['#9a8b83', '#7a675d', '#4d392e'] },
+		{ core: '#513f36', glow: '#7e6c64', trail: ['#9d8e89', '#7e6c64', '#513f36'] },
+		{ core: '#55463e', glow: '#82736b', trail: ['#a1958f', '#82736b', '#55463e'] },
+		{ core: '#594d46', glow: '#867972', trail: ['#a49a94', '#867972', '#594d46'] }
+	];
+	
+	function hexToRgbA(hex) {
+		let r = 0, g = 0, b = 0;
+		if (hex.length === 7) {
+			r = parseInt(hex.substring(1, 3), 16);
+			g = parseInt(hex.substring(3, 5), 16);
+			b = parseInt(hex.substring(5, 7), 16);
+		}
+		return `${r},${g},${b}`;
+	}
+	
+	function updateAndDrawMeteor(e) {
+		if (typeof e.procedural === 'undefined') {
+			e.procedural = true;
+			e.size = 4 + globalRandom() * 4;
+			e.rotation = 0;
+			e.rotationSpeed = (globalRandom() - 0.5) * 0.1;
+			e.colors = meteorFirePalettes[Math.floor(globalRandom() * meteorFirePalettes.length)];
+			e.shapePoints = [];
+			const corners = 5 + Math.floor(globalRandom() * 5);
+			for (let i = 0; i < corners; i++) {
+				const angle = (i / corners) * Math.PI * 2;
+				const radius = e.size * (0.8 + globalRandom() * 0.4);
+				e.shapePoints.push({
+					x: Math.cos(angle) * radius,
+					y: Math.sin(angle) * radius
+				});
+			}
+		}
+	
+	
+		if (e.stage === 'falling') {
+			// -- MOVEMENT & ROTATION --
+			e.x += e.vx;
+			e.y += e.vy;
+			e.rotation += e.rotationSpeed;
+	
+			// -- CREATE TRAIL PARTICLES --
+			// The color property is no longer needed here.
+			e.trail.push({
+				x: e.x,
+				y: e.y,
+				life: 50
+			});
+	
+			// -- DRAW THE NEW METEOR --
+			ctx.save();
+			ctx.translate(e.x, e.y);
+			ctx.rotate(e.rotation);
+	
+			const glowRadius = e.size * 3.5;
+			const glowGradient = ctx.createRadialGradient(0, 0, e.size * 0.8, 0, 0, glowRadius);
+			glowGradient.addColorStop(0, e.colors.glow);
+			glowGradient.addColorStop(1, 'transparent');
+	
+			ctx.fillStyle = glowGradient;
+			ctx.fillRect(-glowRadius, -glowRadius, glowRadius * 2, glowRadius * 2);
+	
+			ctx.fillStyle = e.colors.core;
+			ctx.strokeStyle = '#1a1a1a';
+			ctx.lineWidth = 1;
+			ctx.beginPath();
+			ctx.moveTo(e.shapePoints[0].x, e.shapePoints[0].y);
+			for (let i = 1; i < e.shapePoints.length; i++) {
+				ctx.lineTo(e.shapePoints[i].x, e.shapePoints[i].y);
+			}
+			ctx.closePath();
+			ctx.fill();
+			ctx.stroke();
+	
+			ctx.restore();
+	
+			// -- NEW: DRAW GRADIENT TRAIL --
+			if (e.trail.length > 1) {
+				// 1. Create a linear gradient from the meteor head to the tail's end
+				const trailHead = { x: e.x, y: e.y };
+				const trailEnd = e.trail[0]; // The oldest point defines the gradient's end
+				const gradient = ctx.createLinearGradient(trailHead.x, trailHead.y, trailEnd.x, trailEnd.y);
+	
+				const rgbColor = hexToRgbA(e.colors.glow); // Use the glow color for the trail
+				gradient.addColorStop(0, `rgba(${rgbColor}, 0.8)`); // Start at 80% opacity
+				gradient.addColorStop(0.8, `rgba(${rgbColor}, 0.0)`); // End at 0% opacity
+	
+				// 2. Build the trail's polygon shape
+				ctx.beginPath();
+				const maxWidth = e.size * 1.8; // Maximum width of the trail
+				
+				// Define the points for the left and right sides of the trail ribbon
+				const leftSide = [];
+				const rightSide = [];
+				const allPoints = [trailHead, ...e.trail];
+	
+				for (let i = 1; i < allPoints.length; i++) {
+					const currentPoint = allPoints[i];
+					const prevPoint = allPoints[i - 1];
+					
+					// Vector of the current trail segment
+					const directionX = currentPoint.x - prevPoint.x;
+					const directionY = currentPoint.y - prevPoint.y;
+					const distance = Math.hypot(directionX, directionY) || 1;
+	
+					// Calculate a perpendicular vector to create the ribbon's width
+					const perpX = -directionY / distance;
+					const perpY = directionX / distance;
+	
+					// The width should taper off along the length of the trail
+					const width = maxWidth * (1 - (i / allPoints.length));
+	
+					// Add points for both sides of the ribbon
+					rightSide.push({ x: currentPoint.x + perpX * width, y: currentPoint.y + perpY * width });
+					leftSide.push({ x: currentPoint.x - perpX * width, y: currentPoint.y - perpY * width });
+				}
+	
+				// 3. Draw the polygon and fill it with the gradient
+				if (rightSide.length > 0) {
+					// Move to the meteor's center (the tip of our trail shape)
+					ctx.moveTo(trailHead.x, trailHead.y);
+	
+					// Draw down one side of the trail
+					for (const point of rightSide) {
+						ctx.lineTo(point.x, point.y);
+					}
+	
+					// Draw up the other side of the trail in reverse order
+					for (let i = leftSide.length - 1; i >= 0; i--) {
+						ctx.lineTo(leftSide[i].x, leftSide[i].y);
+					}
+	
+					ctx.closePath(); // Connect back to the meteor's center
+					ctx.fillStyle = gradient;
+					ctx.fill();
+				}
+			}
+
+			// Filter out dead trail particles
+			e.trail = e.trail.filter(t => t.life > 0);
+			
+			// -- IMPACT LOGIC (unchanged) --
+			if (e.y >= e.targetY) {
+				e.stage = 'impact';
+				e.life = 60;
+				activePlants.forEach(plant => {
+					const dist = Math.hypot(plant.screenX - e.targetX, plant.screenY - e.targetY);
+					if (dist < 40 && plant.status === 'idle') {
+						plant.status = 'burning';
+						plant.life = 300 + globalRandom() * 120;
+					}
+				});
+			}
+		} else if (e.stage === 'impact') {
+			// -- IMPACT EFFECT --
+			if (e.life === 59) {
+				const palettes = [
+				  { floor: '#221a14', rim: '#3c2e25' },
+				  { floor: '#3d3d3d', rim: '#575757' },
+				  { floor: '#402E1D', rim: '#5a422a' },
+				  { floor: '#1a1a1a', rim: '#343434' },
+				  { floor: '#AD3286', rim: '#c7469a' },
+				  { floor: '#C30089', rim: '#d61a9d' },
+				  { floor: '#D142AA', rim: '#e056b8' },
+				  { floor: '#A45789', rim: '#ba6b9d' },
+				  { floor: '#B86096', rim: '#cc74a9' },
+				  { floor: '#DA5BAE', rim: '#e570b9' },
+				  { floor: '#B0006F', rim: '#c41a83' },
+				  { floor: '#C60078', rim: '#d81a8c' },
+				  { floor: '#CC5D9D', rim: '#db71ad' },
+				  { floor: '#DB4E9A', rim: '#e662a8' },
+				  { floor: '#DA388C', rim: '#e55c9f' },
+				  { floor: '#E675A9', rim: '#ec89b7' },
+				  { floor: '#E289BB', rim: '#e99dc5' },
+				  { floor: '#E8A3C4', rim: '#eeb0ce' },
+				  { floor: '#E7A9CA', rim: '#edb7d2' },
+				  { floor: '#E6B2C9', rim: '#edbecf' },
+				  { floor: '#E8C3D1', rim: '#eed0d9' },
+				  { floor: '#EFB2C6', rim: '#f3becd' },
+				  { floor: '#E971A3', rim: '#ef85b1' },
+				  { floor: '#B3397A', rim: '#c74d8e' },
+				  { floor: '#8F2C65', rim: '#a34079' },
+				  { floor: '#970C59', rim: '#a9206d' },
+				  { floor: '#C40066', rim: '#d71a7a' },
+				  { floor: '#D72783', rim: '#e24b97' },
+				  { floor: '#C90061', rim: '#db1a75' },
+				  { floor: '#BC005A', rim: '#d01a6e' },
+				  { floor: '#AB004C', rim: '#bf1a60' },
+				  { floor: '#9A0F43', rim: '#ac2357' },
+				  { floor: '#C02A62', rim: '#d33e76' },
+				  { floor: '#D80473', rim: '#e32887' },
+				  { floor: '#E35491', rim: '#ea68a0' },
+				  { floor: '#BC577A', rim: '#ce6b8e' },
+				  { floor: '#963554', rim: '#a84968' },
+				  { floor: '#D1005E', rim: '#df1a72' },
+				  { floor: '#D0005B', rim: '#de1a6f' },
+				  { floor: '#C80054', rim: '#da1a68' },
+				  { floor: '#BD0049', rim: '#d11a5d' },
+				  { floor: '#B50042', rim: '#c91a56' },
+				  { floor: '#A51D44', rim: '#b93158' },
+				  { floor: '#D0346A', rim: '#de487e' },
+				  { floor: '#E0537E', rim: '#e7678c' },
+				  { floor: '#ED849F', rim: '#f198ae' },
+				  { floor: '#B7526E', rim: '#ca6682' },
+				  { floor: '#9B334E', rim: '#ad4762' },
+				  { floor: '#7D253B', rim: '#91394f' },
+				  { floor: '#C0003E', rim: '#d31a52' },
+				  { floor: '#E10041', rim: '#e81a55' },
+				  { floor: '#EC4B6B', rim: '#f0607f' },
+				  { floor: '#F17D8F', rim: '#f591a3' },
+				  { floor: '#B41E3C', rim: '#c83250' },
+				  { floor: '#A31934', rim: '#b72d48' },
+				  { floor: '#8F1E2A', rim: '#a3323e' },
+				  { floor: '#C5353A', rim: '#d7494e' },
+				  { floor: '#D54C43', rim: '#e06057' },
+				  { floor: '#E36956', rim: '#ea7d6a' },
+				  { floor: '#EC8A74', rim: '#f09e88' },
+				  { floor: '#F2A795', rim: '#f6b5a9' },
+				  { floor: '#C3462F', rim: '#d65a43' },
+				  { floor: '#B5422A', rim: '#c9563e' },
+				  { floor: '#A63F28', rim: '#ba533c' },
+				  { floor: '#853524', rim: '#994938' },
+				  { floor: '#D65624', rim: '#e16a38' },
+				  { floor: '#DD6A25', rim: '#e77e39' },
+				  { floor: '#E37C26', rim: '#ea8f3a' },
+				  { floor: '#E58525', rim: '#ec9839' },
+				  { floor: '#E99B26', rim: '#efab3a' },
+				  { floor: '#EDAF25', rim: '#f1bd39' },
+				  { floor: '#F1C524', rim: '#f5d138' },
+				  { floor: '#F4D445', rim: '#f7dd59' },
+				  { floor: '#D68923', rim: '#e19c37' },
+				  { floor: '#C07B23', rim: '#d38e37' },
+				  { floor: '#A96B23', rim: '#bd7f37' },
+				  { floor: '#965E23', rim: '#a87237' },
+				  { floor: '#7B4C20', rim: '#8f6034' },
+				  { floor: '#5B3B1E', rim: '#704f32' },
+				  { floor: '#E29524', rim: '#eaa838' },
+				  { floor: '#C98622', rim: '#da9936' },
+				  { floor: '#B37722', rim: '#c78b36' },
+				  { floor: '#9F6A21', rim: '#b37e35' },
+				  { floor: '#8C5D20', rim: '#a07134' },
+				  { floor: '#EAB625', rim: '#efc339' },
+				  { floor: '#EDC324', rim: '#f1cf38' },
+				  { floor: '#F1D023', rim: '#f5da37' },
+				  { floor: '#F5DD23', rim: '#f8e637' },
+				  { floor: '#F8EA23', rim: '#faee37' },
+				  { floor: '#FCEC23', rim: '#fdf037' },
+				  { floor: '#FFF200', rim: '#fff61a' },
+				  { floor: '#F9D900', rim: '#fbe21a' },
+				  { floor: '#F6CD00', rim: '#f9d61a' },
+				  { floor: '#F3C100', rim: '#f6cb1a' },
+				  { floor: '#EFAA00', rim: '#f3b91a' },
+				  { floor: '#DB9E1A', rim: '#e6ac30' },
+				  { floor: '#C68D1D', rim: '#d89f31' },
+				  { floor: '#B07D1E', rim: '#c49132' },
+				  { floor: '#9E6D1E', rim: '#b28132' },
+				  { floor: '#C7A71E', rim: '#d8b532' },
+				  { floor: '#D9B51D', rim: '#e4c231' },
+				  { floor: '#E5C41C', rim: '#ecd030' },
+				  { floor: '#EDD01C', rim: '#f1da30' },
+				  { floor: '#F3DB1B', rim: '#f6e430' },
+				  { floor: '#F7E41A', rim: '#f9eb2e' },
+				  { floor: '#F8EA19', rim: '#faee2d' },
+				  { floor: '#DDC70E', rim: '#e7d122' },
+				  { floor: '#C6B20C', rim: '#d8be20' },
+				  { floor: '#B29F0B', rim: '#c6b31f' },
+				  { floor: '#A08D0A', rim: '#b4a11e' },
+				  { floor: '#8C7C09', rim: '#a0901d' },
+				  { floor: '#7C6E08', rim: '#90821c' },
+				  { floor: '#BDB10B', rim: '#cfbf1f' },
+				  { floor: '#A99D0A', rim: '#bdb11e' },
+				  { floor: '#978C09', rim: '#a99f1d' },
+				  { floor: '#877D08', rim: '#9b911c' },
+				  { floor: '#616719', rim: '#757b2d' },
+				  { floor: '#7D8218', rim: '#91962c' },
+				  { floor: '#999D16', rim: '#aBB12a' },
+				  { floor: '#B6B914', rim: '#cacf28' },
+				  { floor: '#C5C812', rim: '#d7da26' },
+				  { floor: '#D5D70F', rim: '#e0e223' },
+				  { floor: '#E4E50D', rim: '#ebeb21' },
+				  { floor: '#A4A416', rim: '#b8b82a' },
+				  { floor: '#8E8E15', rim: '#a2a229' },
+				  { floor: '#7A7A14', rim: '#8e8e28' },
+				  { floor: '#696913', rim: '#7d7d27' },
+				  { floor: '#5A5A12', rim: '#6e6e26' },
+				  { floor: '#5B631B', rim: '#6f772f' },
+				  { floor: '#798019', rim: '#8d942d' },
+				  { floor: '#999F17', rim: '#abb32b' },
+				  { floor: '#B6BA14', rim: '#cacd28' },
+				  { floor: '#C4C711', rim: '#d6d925' },
+				  { floor: '#D2D40E', rim: '#dde022' },
+				  { floor: '#E0E10C', rim: '#e8e920' },
+				  { floor: '#006D4C', rim: '#1a8160' },
+				  { floor: '#007C58', rim: '#1a906c' },
+				  { floor: '#008B63', rim: '#1a9f77' },
+				  { floor: '#009B6F', rim: '#1aab83' },
+				  { floor: '#00AA7B', rim: '#1ab88f' },
+				  { floor: '#00B987', rim: '#1ac79b' },
+				  { floor: '#00C893', rim: '#1ad6a7' },
+				  { floor: '#00A36F', rim: '#1ab183' },
+				  { floor: '#008C61', rim: '#1a9f75' },
+				  { floor: '#007A54', rim: '#1a8e68' },
+				  { floor: '#006A4A', rim: '#1a7e5e' },
+				  { floor: '#005C40', rim: '#1a7054' },
+				  { floor: '#004F37', rim: '#1a634b' },
+				  { floor: '#007E5C', rim: '#1a9270' },
+				  { floor: '#009A6F', rim: '#1aab83' },
+				  { floor: '#29A97E', rim: '#3FB792' },
+				  { floor: '#57B992', rim: '#6DC7a6' },
+				  { floor: '#7EC8A6', rim: '#92d2b4' },
+				  { floor: '#A1D6BA', rim: '#B5e0c8' },
+				  { floor: '#C1E3CE', rim: '#D5eadd' },
+				  { floor: '#00885F', rim: '#1a9c73' },
+				  { floor: '#007551', rim: '#1a8965' },
+				  { floor: '#006546', rim: '#1a795a' },
+				  { floor: '#00563C', rim: '#1a6a50' },
+				  { floor: '#004A34', rim: '#1a5e48' },
+				  { floor: '#00402E', rim: '#1a5442' },
+				  { floor: '#007055', rim: '#1a8469' },
+				  { floor: '#008865', rim: '#1a9c79' },
+				  { floor: '#009E75', rim: '#1ab289' },
+				  { floor: '#2AB28C', rim: '#3FBE9F' },
+				  { floor: '#52C4A1', rim: '#66CFAf' },
+				  { floor: '#77D4B6', rim: '#8BDBC4' },
+				  { floor: '#9AE2CA', rim: '#ADEAD8' },
+				  { floor: '#00866A', rim: '#1a9a7e' },
+				  { floor: '#00755C', rim: '#1a8970' },
+				  { floor: '#006550', rim: '#1a7964' },
+				  { floor: '#005745', rim: '#1a6b59' },
+				  { floor: '#004C3B', rim: '#1a604f' },
+				  { floor: '#004133', rim: '#1a5547' },
+				  { floor: '#00685A', rim: '#1a7c6e' },
+				  { floor: '#007E6C', rim: '#1a9280' },
+				  { floor: '#00947E', rim: '#1aa892' },
+				  { floor: '#00A88F', rim: '#1ab6a3' },
+				  { floor: '#00B99F', rim: '#1ac7af' },
+				  { floor: '#00C8AC', rim: '#1ad6ba' },
+				  { floor: '#00D6B8', rim: '#1ae0c6' },
+				  { floor: '#00B29A', rim: '#1ac0a8' },
+				  { floor: '#00A089', rim: '#1ab09d' },
+				  { floor: '#008F7A', rim: '#1aa38e' },
+				  { floor: '#007F6D', rim: '#1a9381' },
+				  { floor: '#006F5F', rim: '#1a8373' },
+				  { floor: '#006152', rim: '#1a7566' },
+				  { floor: '#007A6C', rim: '#1a8e80' },
+				  { floor: '#00907F', rim: '#1aa493' },
+				  { floor: '#00A591', rim: '#1ab9a5' },
+				  { floor: '#00B9A3', rim: '#1ac7b1' },
+				  { floor: '#00CBB4', rim: '#1adcbf' },
+				  { floor: '#00DBCF', rim: '#1ae5da' },
+				  { floor: '#00EAD9', rim: '#1af4e3' }
+				];
+				const palette = palettes[Math.floor(globalRandom() * palettes.length)];
+	
+				const cx = e.targetX;
+				const cy = e.targetY + 5;
+				const baseRadius = 15 + globalRandom() * 100;
+				const complexity = 5 + globalRandom() * 4;
+				const jitter = 0.1 + globalRandom() * 0.4;
+				const phase1 = globalRandom() * 10;
+				const phase2 = globalRandom() * 10;
+	
+				const getLumpyRadius = (angle) => {
+					const noise = (Math.sin(angle * complexity + phase1) + Math.cos(angle * (complexity / 2) + phase2)) / 2;
+					return baseRadius * (1 + noise * jitter);
+				};
+	
+				const maxRadius = baseRadius * (1 + jitter) + 3;
+	
+				for (let x = Math.floor(cx - maxRadius); x <= Math.ceil(cx + maxRadius); x++) {
+					if (x < 0 || x >= landscapeHeightMap.length) continue;
+					for (let y = Math.floor(cy - maxRadius); y <= Math.ceil(cy + maxRadius); y++) {
+						if (y >= landscapeHeightMap[x]) {
+							const angle = Math.atan2(y - cy, x - cx);
+							const lumpyRadius = getLumpyRadius(angle);
+							const lumpyRim = lumpyRadius + 2 + globalRandom();
+							const distSq = (x - cx) ** 2 + (y - cy) ** 2;
+	
+							if (distSq <= lumpyRadius ** 2) {
+								landCtx.fillStyle = palette.floor;
+								landCtx.fillRect(x, y, 1, 1);
+								landCtx.globalAlpha = Math.random() * (0.8 - 0.3) + 0.3;
+							} else if (distSq <= lumpyRim ** 2) {
+								landCtx.fillStyle = palette.rim;
+								landCtx.fillRect(x, y, 1, 1);
+								landCtx.globalAlpha = Math.random() * (0.8 - 0.3) + 0.3;
+							}
+						}
+					}
+				}
+			}
+	
+			ctx.save();
+			ctx.beginPath();
+			ctx.moveTo(0, canvas.height);
+			ctx.lineTo(0, landscapeHeightMap[0]);
+			for (let x = 1; x < canvas.width; x++) { if (landscapeHeightMap[x]) ctx.lineTo(x, landscapeHeightMap[x]); }
+			ctx.lineTo(canvas.width, canvas.height);
+			ctx.closePath();
+			ctx.clip();
+			
+			const fadeDuration = 15; // The number of frames over which the meteor fades out.
+			const startLife = 60;    // The life value when the impact and fade begin.
+	
+			// Only draw the meteor if it's within the fade-out duration.
+			if (e.life > startLife - fadeDuration) { 
+				// Calculate the opacity from 1 down to 0 based on how much time has passed.
+				const opacity = Math.max(0, (e.life - (startLife - fadeDuration)) / fadeDuration);
+	
+				ctx.save();
+				ctx.globalAlpha = opacity; // UPDATED: Apply the fade-out opacity.
+	
+				// Draw the meteor one last time at its impact point.
+				ctx.translate(e.x, e.y); 
+				ctx.rotate(e.rotation);
+	
+				const glowRadius = e.size * 3.5;
+				const glowGradient = ctx.createRadialGradient(0, 0, e.size * 0.8, 0, 0, glowRadius);
+				glowGradient.addColorStop(0, e.colors.glow);
+				glowGradient.addColorStop(1, 'transparent');
+				ctx.fillStyle = glowGradient;
+				ctx.fillRect(-glowRadius, -glowRadius, glowRadius * 2, glowRadius * 2);
+	
+				ctx.fillStyle = e.colors.core;
+				ctx.strokeStyle = '#1a1a1a';
+				ctx.lineWidth = 1;
+				ctx.beginPath();
+				ctx.moveTo(e.shapePoints[0].x, e.shapePoints[0].y);
+				for (let i = 1; i < e.shapePoints.length; i++) {
+					ctx.lineTo(e.shapePoints[i].x, e.shapePoints[i].y);
+				}
+				ctx.closePath();
+				ctx.fill();
+				ctx.stroke();
+				
+				ctx.restore(); // UPDATED: Restore the context, removing the globalAlpha change.
+			}
+			// --- END OF UPDATED SECTION ---
+	
+			const progress = 1 - e.life / 60;
+			ctx.fillStyle = `rgba(255, 200, 100, ${1 - progress})`;
+			ctx.beginPath();
+			ctx.arc(e.targetX, e.targetY, progress * 40, 0, Math.PI * 2);
+			ctx.fill();
+	
+			ctx.restore();
+		}
+	}
+
+    function updateAndDrawLightning(e) {
+        const flashOpacity = Math.sin((e.life / 30) * Math.PI);
+        if (flashOpacity > 0) {
+            ctx.save();
+            ctx.globalAlpha = flashOpacity;
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.shadowColor = 'lightblue';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            
+            let targetY = landscapeHeightMap[Math.round(e.x)] || canvas.height;
+            let targetX = e.x;
+            if (e.targetPlant && e.targetPlant.spriteCanvas) {
+                targetY = e.targetPlant.screenY + e.targetPlant.spriteOffset.y;
+                targetX = e.targetPlant.screenX + e.targetPlant.spriteOffset.x + e.targetPlant.spriteCanvas.width / 2;
+            }
+            
+            ctx.moveTo(targetX, 0);
+            let lx = targetX;
+            let ly = 0;
+            while (ly < targetY - 20) {
+                const nextX = lx + (globalRandom() - 0.5) * 40;
+                const nextY = ly + 20 + globalRandom() * 10;
+                ctx.lineTo(nextX, nextY);
+                lx = nextX;
+                ly = nextY;
+            }
+            ctx.lineTo(targetX, targetY);
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        if (e.life > 28 && e.targetPlant && e.targetPlant.status === 'idle') {
+            e.targetPlant.status = 'burning';
+            e.targetPlant.life = 300 + globalRandom() * 120;
+        }
+    }
+
+    function updateAndDrawAurora(e) {
+        e.bands.forEach(band => {
+            ctx.beginPath();
+            ctx.moveTo(band.points[0].x, band.y + band.points[0].y);
+            for(let i=1; i < band.points.length - 2; i++) {
+                const xc = (band.points[i].x + band.points[i+1].x) / 2;
+                const yc = (band.y + band.points[i].y + band.y + band.points[i+1].y) / 2;
+                ctx.quadraticCurveTo(band.points[i].x, band.y + band.points[i].y, xc, yc);
+                band.points[i].y += band.points[i].speed;
+                if(Math.abs(band.points[i].y) > 20) band.points[i].speed *= -1;
+            }
+            ctx.lineWidth = 20;
+            ctx.strokeStyle = band.color;
+            ctx.stroke();
+        });
+    }
+//
+    function updateAndDrawGolfer(golfer) {
+        // Update the golfer's ground position
+        golfer.screenY = landscapeHeightMap[Math.round(golfer.x)] || golfer.screenY;
+        golfer.animation_timer++;
+        
+        // State Machine for Golfer's Actions
+        if (golfer.stage === 'walking-in') {
+            golfer.x += golfer.speed;
+            if ((golfer.speed > 0 && golfer.x >= golfer.targetX) || (golfer.speed < 0 && golfer.x <= golfer.targetX)) {
+                golfer.stage = 'swinging';
+                golfer.animation_timer = 0;
+                golfer.ballStruck = false; 
+            }
+        } else if (golfer.stage === 'swinging') {
+            // Strike the ball at the midpoint of the swing animation
+            if (golfer.animation_timer === 20 && !golfer.ballStruck) {
+                golfer.ballStruck = true;
+                
+                const ballOriginX = golfer.x;
+                const ballOriginY = golfer.screenY - 5; // Start at the golfer's feet
+
+                // Aiming logic
+                const dx = golfHole.x - ballOriginX;
+                const dy = golfHole.y - ballOriginY;
+                const dist = Math.hypot(dx, dy);
+
+                // Simple arc physics calculation
+                const totalTime = dist / (4 + globalRandom() * 2); // Time to reach target horizontally
+                const vx = dx / totalTime;
+                const gravity = 0.1;
+                const vy = (dy - 0.5 * gravity * totalTime * totalTime) / totalTime; // Initial vertical velocity
+                
+                events.push({
+                    type: 'golfBall',
+                    golferName: golfer.name,
+                    x: ballOriginX,
+                    y: ballOriginY,
+                    vx: vx + (globalRandom() - 0.5) * 0.5, // Add inaccuracy
+                    vy: vy + (globalRandom() - 0.5) * 0.2,
+                    gravity: gravity,
+                    bounces: 0,
+                    state: 'in-flight',
+                    life: 1000,
+                    trail: []
+                });
+            }
+
+            if (golfer.animation_timer > 40) {
+                golfer.stage = 'watching';
+                golfer.animation_timer = 0; 
+            }
+        } else if (golfer.stage === 'watching') {
+            if (golfer.animation_timer > 180) { // Watch for 3 seconds
+                golfer.stage = 'walking-out';
+                golfer.speed *= -1;
+            }
+        } else if (golfer.stage === 'walking-out') {
+            golfer.x += golfer.speed;
+            if (golfer.x < -60 || golfer.x > canvas.width + 60) golfer.life = 0;
+        }
+        
+        // --- Drawing the Golfer ---
+        ctx.save();
+        ctx.translate(golfer.x, golfer.screenY);
+			const direction = Math.sign(golfer.speed);
+    		ctx.scale(direction, 1); // Face the correct direction new way	
+        //ctx.scale(Math.sign(golfer.speed), 1); // Face the correct direction old way
+        let frame = 'idle';
+        if(golfer.stage === 'swinging') frame = 'swing';
+        
+        ctx.fillStyle = golfer.shirtColor; ctx.fillRect(-3, -25, 8, 12);
+        ctx.fillStyle = '#ffdbac'; ctx.fillRect(-2, -31, 6, 6);
+        ctx.fillStyle = '#555'; ctx.fillRect(-3, -13, 4, 13); ctx.fillRect(2, -13, 4, 13);
+        
+        ctx.save();
+        ctx.translate(2, -22);
+        if (frame === 'swing') {
+            const swingProgress = Math.sin((golfer.animation_timer / 40) * Math.PI);
+            ctx.rotate(swingProgress * 2 - 1);
+        }
+        ctx.fillStyle = '#ffdbac'; ctx.fillRect(0, 0, 2, 8);
+        ctx.fillStyle = '#aaa'; ctx.fillRect(0, 8, 2, 18);
+        ctx.fillStyle = '#888'; ctx.fillRect(-2, 26, 6, 3);
+        ctx.restore();
+        
+        // --- Draw the Golfer's Name ---
+		ctx.save();
+		ctx.scale(direction, 1); // Apply the scale again to un-flip the text
+		
+		ctx.font = '17px "Tiny5", sans-serif';
+		ctx.textAlign = 'center';
+		ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+		// We multiply the shadow offset by the direction to move it correctly
+		ctx.fillText(golfer.name, 1 * direction, -38);
+		ctx.fillStyle = 'white';
+		ctx.fillText(golfer.name, 0, -39);
+		
+		ctx.restore(); // Restore from the text-un-flipping scale
+		
+		ctx.restore(); // Restore from the main golfer translation and scale
+    }
+
+    function updateAndDrawGolfball(ball) {
+        if (ball.state === 'in-flight' || ball.state === 'rolling') {
+            ball.vy += ball.gravity;
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            ball.screenY = ball.y; // Update for sorting
+        }
+
+        ball.trail.push({x: ball.x, y: ball.y, life: 20});
+        ball.trail.forEach(t => t.life--);
+        ball.trail = ball.trail.filter(t => t.life > 0);
+
+        const groundY = landscapeHeightMap[Math.round(ball.x)] || canvas.height * 2;
+        
+        if (ball.y >= groundY && ball.vy > 0) {
+            ball.y = groundY;
+            if (ball.bounces < 2 && Math.abs(ball.vy) > 1) {
+                ball.vy *= -0.4;
+                ball.vx *= 0.7;
+                ball.bounces++;
+            } else {
+                ball.state = 'rolling';
+                ball.vy = 0;
+                ball.vx *= 0.95;
+            }
+        }
+        
+        if(ball.vy > -2) { // Only check for collisions when it's near the apex or falling
+            for(const plant of activePlants.values()){
+                if(plant.spriteCanvas && plant.status === 'idle'){
+                    const dist = Math.hypot(ball.x - plant.screenX, ball.y - (plant.screenY - plant.spriteCanvas.height / 2));
+                    if(dist < plant.spriteCanvas.width / 2) {
+                        ball.vx *= -0.5 + (globalRandom() - 0.5) * 0.4;
+                        ball.vy *= 0.5;
+                        ball.bounces++; // A hit counts as a bounce
+                    }
+                }
+            }
+        }
+        
+        if(ball.state === 'rolling') {
+             for(const p of puddles) {
+                const dist = Math.hypot(ball.x - p.x, ball.y - p.y);
+                if (dist < p.radius) {
+                    ball.vx *= 0.1;
+                }
+             }
+        }
+
+        // --- Drawing ---
+        ball.trail.forEach(t => {
+            ctx.fillStyle = `rgba(255,255,255,${t.life / 40})`;
+            ctx.fillRect(t.x, t.y, 1, 1);
+        });
+        
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, 2, 0, Math.PI*2);
+        ctx.fill();
+
+        // --- Hole In One & Despawn Logic ---
+        const distToHole = Math.hypot(ball.x - golfHole.x, ball.y - golfHole.y);
+        if (distToHole < golfHole.radius && ball.state === 'rolling' && Math.abs(ball.vx) < 0.5) {
+            ball.life = 0;
+            events.push({type: 'holeInOne', name: ball.golferName, life: 240, x: golfHole.x, y: golfHole.y, particles: []});
+        }
+
+        if (ball.state === 'rolling' && Math.abs(ball.vx) < 0.01) {
+            ball.life = 0; // Despawn if stopped
+        }
+    }
+//
+    function updateAndDrawHoleInOne(e) {
+        if(e.life === 239) {
+            for(let i=0; i < 50; i++) {
+                const angle = globalRandom() * Math.PI * 2;
+                const speed = globalRandom() * 3 + 1;
+                e.particles.push({
+                    x: e.x, y: e.y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 2,
+                    life: 60 + globalRandom() * 30,
+                    color: `hsl(${globalRandom()*360}, 100%, 70%)`
+                });
+            }
+        }
+
+        e.particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.05;
+            p.life--;
+            ctx.globalAlpha = p.life / 60;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, 2, 2);
+        });
+        e.particles = e.particles.filter(p => p.life > 0);
+        
+		const progress = 1 - (e.life / 240);
+        const scale = Math.sin(progress * Math.PI) * 1.2;
+        const alpha = Math.sin(progress * Math.PI);
+        const message = `${e.name}`+'\n got a Hole in ONE!';
+        
+        ctx.save();
+        ctx.translate(canvas.width/2, canvas.height/2);
+        ctx.scale(scale, scale);
+        ctx.globalAlpha = alpha;
+        ctx.font = '40px "Silkscreen", sans-serif';
+        ctx.textAlign = 'center';
+		ctx.fillStyle = '#231f20';
+		ctx.globalAlpha = alpha * 0.5;
+        ctx.fillText(message, 1, 1);
+        ctx.fillStyle = '#ec008c';
+		ctx.globalAlpha = alpha;
+        ctx.fillText(message, 0, 0);
+        ctx.restore();
+		setTimeout(() => {
+			window.location.reload();
+		}, 6000); // A 6 second delay
+    }
+	
+	function updateAndDrawCreature(creature, time) {
+    creature.state_timer--;
+    creature.animation_timer++;
+    creature.life--;
+
+    if (creature.life <= 200 && creature.state !== 'leaving') {
+        creature.state = 'leaving';
+        creature.targetX = creature.x > canvas.width / 2 ? canvas.width + 50 : -50;
+        creature.speed = (creature.x < creature.targetX ? 1 : -1) * (0.3 + globalRandom() * 0.4);
+    }
+
+    if (creature.state === 'roaming' || creature.state === 'leaving') {
+        creature.x += creature.speed;
+
+        // --- SMOOTH Y-POSITION LOGIC (Keep this as is) ---
+        const x1 = Math.floor(creature.x);
+        const x2 = x1 + 1;
+        
+        if (x1 >= 0 && x2 < canvas.width) {
+            const y1 = landscapeHeightMap[x1];
+            const y2 = landscapeHeightMap[x2];
+            const fractionalX = creature.x - x1;
+            
+            // Linear interpolation for smooth height transition
+            creature.screenY = y1 + (y2 - y1) * fractionalX;
+        } else {
+            creature.screenY = canvas.height * 2;
+        }
+        // ---
+
+        if ((creature.state_timer <= 0 || Math.abs(creature.x - creature.targetX) < 5) && creature.state !== 'leaving') {
+            creature.state = 'idle';
+            creature.state_timer = 100 + globalRandom() * 200;
+        }
+    } else if (creature.state === 'idle') {
+        if (creature.state_timer <= 0) {
+            creature.state = 'roaming';
+            creature.state_timer = 200 + globalRandom() * 200;
+            creature.targetX = globalRandom() * (canvas.width - 200) + 100;
+            creature.speed = (creature.x < creature.targetX ? 1 : -1) * (0.3 + globalRandom() * 0.4);
+        }
+    }
+
+    if (creature.x < -50 || creature.x > canvas.width + 50) {
+        activeCreatures.delete(creature);
+        return;
+    }
+
+    const bob = Math.sin(creature.animation_timer * 0.2) * (creature.state !== 'idle' ? 1.5 : 0);
+    
+    // Round coordinates only for rendering ---
+    const finalDrawX = Math.round(creature.x);
+    const finalDrawY = Math.round(creature.screenY + bob);
+    ctx.translate(finalDrawX, finalDrawY);
+    
+    ctx.scale(creature.speed > 0 ? 1 : -1, 1);
+    
+    //only rabbits..
+        // A more detailed grey rabbit with shading and a pink nose.
+		if (creature.creatureType === 'rabbit1') {
+			// Body
+			ctx.fillStyle = '#999999'; ctx.fillRect(1, -5, 5, 4); // Main body color
+			ctx.fillStyle = '#808080'; ctx.fillRect(1, -4, 5, 2); // Shading on the lower body
+			ctx.fillStyle = '#a1a1a1'; ctx.fillRect(2, -5, 3, 1); // Highlight on the back
+		
+			// Head & Ears
+			ctx.fillStyle = '#c0fafc'; ctx.fillRect(4, -7, 3, 3); // Head
+			ctx.fillStyle = '#a2e8ea'; ctx.fillRect(4, -6, 3, 1); // Shading on the head
+			ctx.fillStyle = '#cbd4d1'; ctx.fillRect(3, -9, 1, 3); // Left ear
+			ctx.fillStyle = '#b8c2bf'; ctx.fillRect(3, -8, 1, 1); // Left ear shading
+			ctx.fillStyle = '#cbd4d1'; ctx.fillRect(5, -9, 1, 3); // Right ear
+			ctx.fillStyle = '#b8c2bf'; ctx.fillRect(5, -8, 1, 1); // Right ear shading
+		
+			// Eye & Nose
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -6, 1, 1); // Eye
+			ctx.fillStyle = '#ffc0cb'; ctx.fillRect(7, -5, 1, 1); // Pink nose
+		
+		} else if (creature.creatureType === 'rabbit2') {
+			// A more detailed brown rabbit with a fluffy tail.
+			// Body
+			ctx.fillStyle = '#967969'; ctx.fillRect(0, -5, 5, 4); // Main body
+			ctx.fillStyle = '#795c4e'; ctx.fillRect(0, -4, 5, 2); // Body shading
+			ctx.fillStyle = '#ab8d7b'; ctx.fillRect(1, -5, 3, 1); // Highlight
+		
+			// Head & Ears
+			ctx.fillStyle = '#afb6c8'; ctx.fillRect(4, -7, 3, 3); // Head
+			ctx.fillStyle = '#98a0b3'; ctx.fillRect(4, -6, 3, 1); // Head shading
+			ctx.fillStyle = '#ddb3ff'; ctx.fillRect(3, -10, 1, 4); // Left ear
+			ctx.fillStyle = '#c5a1e6'; ctx.fillRect(3, -9, 1, 1); // Left ear inner
+			ctx.fillStyle = '#ddb3ff'; ctx.fillRect(5, -10, 1, 4); // Right ear
+			ctx.fillStyle = '#c5a1e6'; ctx.fillRect(5, -9, 1, 1); // Right ear inner
+		
+			// Eye & Tail
+			ctx.fillStyle = '#333'; ctx.fillRect(6, -6, 1, 1); // Eye
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(-1, -4, 1, 2); // Fluffy tail
+			ctx.fillStyle = '#f0f0f0'; ctx.fillRect(0, -3, 1, 1); // Tail shading
+		
+		} else if (creature.creatureType === 'rabbit3') {
+			// A dark grey rabbit with distinct paws.
+			// Body & Paws
+			ctx.fillStyle = '#8a8a8a'; ctx.fillRect(0, -5, 5, 3); // Body
+			ctx.fillStyle = '#707070'; ctx.fillRect(0, -3, 5, 1); // Body shading
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(1, -2, 1, 1); // Front paw
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(4, -2, 1, 1); // Back paw
+		
+			// Head & Ears
+			ctx.fillStyle = '#cbd4d1'; ctx.fillRect(4, -7, 3, 3); // Head
+			ctx.fillStyle = '#b8c2bf'; ctx.fillRect(4, -6, 3, 1); // Head shading
+			ctx.fillStyle = '#c0fafc'; ctx.fillRect(2, -10, 2, 4); // Left ear
+			ctx.fillStyle = '#a2e8ea'; ctx.fillRect(3, -9, 1, 2); // Inner left ear
+			ctx.fillStyle = '#c0fafc'; ctx.fillRect(5, -10, 1, 3); // Right ear
+		
+			// Eye
+			ctx.fillStyle = '#6c5c65'; ctx.fillRect(6, -6, 1, 1); // Eye
+		
+		} else if (creature.creatureType === 'rabbit4') {
+			// A tan rabbit with a carrot.
+			// Body
+			ctx.fillStyle = '#b38b6d'; ctx.fillRect(0, -5, 5, 4); // Main body color
+			ctx.fillStyle = '#9e7a60'; ctx.fillRect(0, -4, 5, 2); // Shading
+		
+			// Head & Ears
+			ctx.fillStyle = '#decece'; ctx.fillRect(4, -7, 2, 3); // Head
+			ctx.fillStyle = '#c9bcbc'; ctx.fillRect(4, -6, 2, 1); // Head shading
+			ctx.fillStyle = '#edfffd'; ctx.fillRect(3, -9, 1, 3); // Left ear
+			ctx.fillStyle = '#d4e5e3'; ctx.fillRect(3, -8, 1, 1); // Inner ear
+			ctx.fillStyle = '#edfffd'; ctx.fillRect(5, -9, 1, 3); // Right ear
+			ctx.fillStyle = '#d4e5e3'; ctx.fillRect(5, -8, 1, 1); // Inner ear
+		
+			// Eye & Carrot
+			ctx.fillStyle = '#666'; ctx.fillRect(5, -6, 1, 1); // Eye
+			ctx.fillStyle = '#ff9900'; ctx.fillRect(6, -5, 2, 1); // Carrot body
+			ctx.fillStyle = '#00cc00'; ctx.fillRect(7, -6, 1, 1); // Carrot top
+		} 
+		// 5. Calico Rabbit
+		else if (creature.creatureType === 'rabbit5') {
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(0, -5, 6, 4);
+			ctx.fillStyle = '#ff9900'; ctx.fillRect(1, -4, 2, 2);
+			ctx.fillStyle = '#663300'; ctx.fillRect(4, -5, 2, 2);
+			ctx.fillStyle = '#ffc0cb'; ctx.fillRect(3, -9, 1, 3);
+			ctx.fillRect(5, -9, 1, 3);
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -4, 1, 1);
+		}
+		
+		// 6. Black Rabbit with Red Eyes
+		else if (creature.creatureType === 'rabbit6') {
+			ctx.fillStyle = '#333333'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#222222'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#ff0000'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#444444'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+		}
+		
+		// 7. Rabbit with a Top Hat
+		else if (creature.creatureType === 'rabbit7') {
+			ctx.fillStyle = '#cccccc'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#afb6c8'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#333'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#ddb3ff'; ctx.fillRect(2, -7, 1, 2);
+			// Top Hat
+			ctx.fillStyle = '#000000'; ctx.fillRect(3, -11, 4, 1);
+			ctx.fillRect(4, -10, 2, 3);
+		}
+		
+		// 8. Zombie Rabbit
+		else if (creature.creatureType === 'rabbit8') {
+			ctx.fillStyle = '#7aa27a'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#99b899'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#ff0000'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#cccccc'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillStyle = '#555'; ctx.fillRect(4, -4, 1, 1);
+		}
+		
+		// 9. Rainbow Rabbit
+		else if (creature.creatureType === 'rabbit9') {
+			ctx.fillStyle = '#ff0000'; ctx.fillRect(0, -5, 1, 4);
+			ctx.fillStyle = '#ff9900'; ctx.fillRect(1, -5, 1, 4);
+			ctx.fillStyle = '#ffff00'; ctx.fillRect(2, -5, 1, 4);
+			ctx.fillStyle = '#00ff00'; ctx.fillRect(3, -5, 1, 4);
+			ctx.fillStyle = '#0000ff'; ctx.fillRect(4, -5, 1, 4);
+			ctx.fillStyle = '#4b0082'; ctx.fillRect(5, -5, 1, 4);
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -4, 1, 1);
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+		}
+		
+		// 10. Angora Rabbit (Fluffy)
+		else if (creature.creatureType === 'rabbit10') {
+			ctx.fillStyle = '#f0f0f0'; ctx.fillRect(-1, -6, 7, 5);
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(4, -7, 3, 3);
+			ctx.fillStyle = '#333'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#e0e0e0'; ctx.fillRect(3, -9, 1, 3);
+			ctx.fillRect(5, -9, 1, 3);
+		}
+		
+		// 11. Dutch Rabbit
+		else if (creature.creatureType === 'rabbit11') {
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(0, -5, 3, 4);
+			ctx.fillStyle = '#663300'; ctx.fillRect(3, -5, 3, 4);
+			ctx.fillStyle = '#663300'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -4, 1, 1);
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillStyle = '#663300'; ctx.fillRect(5, -8, 1, 3);
+		}
+		
+		// 12. Ninja Rabbit
+		else if (creature.creatureType === 'rabbit12') {
+			ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#333333'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#ff0000'; ctx.fillRect(5, -5, 2, 1); // Headband
+			ctx.fillStyle = '#444444'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+		}
+		
+		// 13. Blue Rabbit with a Carrot
+		else if (creature.creatureType === 'rabbit13') {
+			ctx.fillStyle = '#6699ff'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#99ccff'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#333'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+			// Carrot
+			ctx.fillStyle = '#ff9900'; ctx.fillRect(-2, -4, 2, 1);
+			ctx.fillStyle = '#00cc00'; ctx.fillRect(-3, -4, 1, 1);
+		}
+		
+		// 14. Lava Rabbit
+		else if (creature.creatureType === 'rabbit14') {
+			ctx.fillStyle = '#ff3300'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#ffff00'; ctx.fillRect(1, -4, 3, 2);
+			ctx.fillStyle = '#cc0000'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#ff9900'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+		}
+		
+		// 15. Forest Rabbit
+		else if (creature.creatureType === 'rabbit15') {
+			ctx.fillStyle = '#663300'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#996633'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#333'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#009900'; ctx.fillRect(2, -8, 1, 3); // Leaf on ear
+			ctx.fillStyle = '#996633'; ctx.fillRect(4, -8, 1, 3);
+		}
+		
+		// 16. Ghost Rabbit
+		else if (creature.creatureType === 'rabbit16') {
+			ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = 'rgba(230, 230, 250, 0.7)'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#000'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+		}
+		
+		// 17. Pirate Rabbit
+		else if (creature.creatureType === 'rabbit17') {
+			ctx.fillStyle = '#999999'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#c0fafc'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -5, 1, 1); // Eye patch
+			ctx.fillStyle = '#cbd4d1'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(4, -8, 3, 1); // Bandana
+		}
+		
+		// 18. Steampunk Rabbit
+		else if (creature.creatureType === 'rabbit18') {
+			ctx.fillStyle = '#a67b5b'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#c8a183'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#ffcc00'; ctx.fillRect(6, -5, 1, 1); // Monocle
+			ctx.fillStyle = '#e6c5a8'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+			ctx.fillStyle = '#654321'; ctx.fillRect(1, -6, 1, 1); // Gear
+		}
+		
+		// 19. Checkered Rabbit
+		else if (creature.creatureType === 'rabbit19') {
+			for (let i = 0; i < 5; i++) {
+				for (let j = 0; j < 4; j++) {
+					ctx.fillStyle = (i + j) % 2 === 0 ? '#ffffff' : '#000000';
+					ctx.fillRect(i, j - 5, 1, 1);
+				}
+			}
+			ctx.fillStyle = '#cccccc'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#dddddd'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+		}
+		
+		// 20. Galaxy Rabbit
+		else if (creature.creatureType === 'rabbit20') {
+			ctx.fillStyle = '#0d0d26'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(1, -4, 1, 1); // Star
+			ctx.fillRect(3, -3, 1, 1); // Star
+			ctx.fillStyle = '#4d4d8d'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#b3b3e6'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+		}
+		
+		// 21. Strawberry Rabbit
+		else if (creature.creatureType === 'rabbit21') {
+			ctx.fillStyle = '#ff3366'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(1, -4, 1, 1); // Seed
+			ctx.fillRect(3, -4, 1, 1); // Seed
+			ctx.fillStyle = '#ff6699'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#009933'; ctx.fillRect(4, -8, 2, 1); // Leaf hat
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -5, 1, 1);
+		}
+		
+		// 22. Gold Rabbit
+		else if (creature.creatureType === 'rabbit22') {
+			ctx.fillStyle = '#ffd700'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#ffec80'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#b8860b'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#fffacd'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+		}
+		
+		// 23. Robot Rabbit
+		else if (creature.creatureType === 'rabbit23') {
+			ctx.fillStyle = '#c0c0c0'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#e0e0e0'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#ff0000'; ctx.fillRect(6, -5, 1, 1); // Red eye
+			ctx.fillStyle = '#d0d0d0'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+			ctx.fillStyle = '#a0a0a0'; ctx.fillRect(1, -3, 1, 1); // Bolt
+		}
+		
+		// 24. Winged Rabbit
+		else if (creature.creatureType === 'rabbit24') {
+			ctx.fillStyle = '#cccccc'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#afb6c8'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#333'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#ddb3ff'; ctx.fillRect(3, -9, 1, 3);
+			ctx.fillRect(2, -7, 1, 6);
+			// Wings
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(-2, -7, 2, 4);
+			ctx.fillStyle = '#f0f0f0'; ctx.fillRect(-1, -6, 1, 3);
+		}
+		
+		// 25. Jester Rabbit
+		else if (creature.creatureType === 'rabbit25') {
+			ctx.fillStyle = '#999999'; ctx.fillRect(0, -5, 5, 3);
+			ctx.fillStyle = '#cbd4d1'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#6c5c65'; ctx.fillRect(6, -4, 1, 1);
+			// Jester Hat
+			ctx.fillStyle = '#ff0000'; ctx.fillRect(2, -10, 2, 4);
+			ctx.fillStyle = '#0000ff'; ctx.fillRect(4, -10, 2, 4);
+		}
+		
+		// 26. Inverted Color Rabbit
+		else if (creature.creatureType === 'rabbit26') {
+			ctx.fillStyle = '#996666'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#213131'; ctx.fillRect(4, -6, 2, 3);
+			ctx.fillStyle = '#999999'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#120002'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -9, 1, 3);
+		}
+		
+		// 27. Bumblebee Rabbit
+		else if (creature.creatureType === 'rabbit27') {
+			ctx.fillStyle = '#ffff00'; ctx.fillRect(0, -5, 5, 1);
+			ctx.fillStyle = '#000000'; ctx.fillRect(0, -4, 5, 1);
+			ctx.fillStyle = '#ffff00'; ctx.fillRect(0, -3, 5, 1);
+			ctx.fillStyle = '#000000'; ctx.fillRect(0, -2, 5, 1);
+			ctx.fillStyle = '#ffff00'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -5, 1, 1);
+		}
+		
+		// 28. Alien Rabbit
+		else if (creature.creatureType === 'rabbit28') {
+			ctx.fillStyle = '#99cc99'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#cce5cc'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#000000'; ctx.fillRect(5, -5, 2, 2); // Big eye
+			ctx.fillStyle = '#669966'; ctx.fillRect(3, -9, 1, 4); // Antenna
+			ctx.fillStyle = '#ff0000'; ctx.fillRect(3, -10, 1, 1); // Antenna light
+		}
+		
+		// 29. Wizard Rabbit
+		else if (creature.creatureType === 'rabbit29') {
+			ctx.fillStyle = '#999999'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#c0fafc'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -5, 1, 1);
+			// Wizard Hat
+			ctx.fillStyle = '#0000ff'; ctx.fillRect(3, -10, 5, 1);
+			ctx.fillRect(4, -9, 3, 2);
+			ctx.fillRect(5, -8, 1, 2);
+			ctx.fillStyle = '#ffff00'; ctx.fillRect(5, -9, 1, 1); // Star on hat
+		}
+		
+		// 30. King Rabbit
+		else if (creature.creatureType === 'rabbit30') {
+			ctx.fillStyle = '#cccccc'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#afb6c8'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#333'; ctx.fillRect(6, -5, 1, 1);
+			// Crown
+			ctx.fillStyle = '#ffd700'; ctx.fillRect(3, -9, 4, 1);
+			ctx.fillRect(3, -8, 1, 1);
+			ctx.fillRect(5, -8, 1, 1);
+			ctx.fillRect(7, -8, 1, 1);
+		}
+		
+		// 31. Gardener Rabbit
+		else if (creature.creatureType === 'rabbit31') {
+			ctx.fillStyle = '#c68c53'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#d9a066'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#333'; ctx.fillRect(6, -5, 1, 1);
+			// Straw Hat
+			ctx.fillStyle = '#ffcc66'; ctx.fillRect(2, -8, 6, 1);
+			ctx.fillRect(3, -7, 4, 1);
+			// Holding a flower
+			ctx.fillStyle = '#ff3399'; ctx.fillRect(-1, -4, 1, 1);
+			ctx.fillStyle = '#009933'; ctx.fillRect(-1, -3, 1, 1);
+		}
+		
+		// 32. Sunset Rabbit
+		else if (creature.creatureType === 'rabbit32') {
+			ctx.fillStyle = '#ff6666'; ctx.fillRect(0, -5, 5, 2);
+			ctx.fillStyle = '#ffcc66'; ctx.fillRect(0, -3, 5, 2);
+			ctx.fillStyle = '#ff9999'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+		}
+		
+		// 33. Ice Cream Rabbit
+		else if (creature.creatureType === 'rabbit33') {
+			ctx.fillStyle = '#ff99cc'; ctx.fillRect(0, -5, 5, 4); // Strawberry scoop
+			ctx.fillStyle = '#ffffcc'; ctx.fillRect(0, -2, 5, 2); // Cone
+			ctx.fillStyle = '#ff66b2'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#ff3300'; ctx.fillRect(2, -6, 1, 1); // Cherry on top
+		}
+		
+		// 34. Deep Sea Rabbit
+		else if (creature.creatureType === 'rabbit34') {
+			ctx.fillStyle = '#003366'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#006699'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#ffff00'; ctx.fillRect(6, -5, 2, 1); // Angler light
+			ctx.fillStyle = '#333'; ctx.fillRect(5, -5, 1, 1);
+			ctx.fillStyle = '#001a33'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+		}
+		
+		// 35. Skeleton Rabbit
+		else if (creature.creatureType === 'rabbit35') {
+			ctx.fillStyle = '#000000'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(1, -4, 3, 2); // Ribs
+			ctx.fillStyle = '#000000'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#ffffff'; ctx.fillRect(5, -5, 1, 1); // Eye socket
+			ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(5, -8, 1, 3);
+		}
+		
+		// 36. Farmer Rabbit
+		else if (creature.creatureType === 'rabbit36') {
+			ctx.fillStyle = '#999999'; ctx.fillRect(0, -5, 5, 4);
+			ctx.fillStyle = '#c0fafc'; ctx.fillRect(4, -6, 3, 3);
+			ctx.fillStyle = '#111'; ctx.fillRect(6, -5, 1, 1);
+			ctx.fillStyle = '#cbd4d1'; ctx.fillRect(3, -8, 1, 3);
+			ctx.fillRect(4, -8, 3, 5);
+			// Overalls
+			ctx.fillStyle = '#0000ff'; ctx.fillRect(1, -3, 3, 2);
+			ctx.fillRect(1, -4, 1, 2);
+			ctx.fillRect(3, -4, 1, 2);
+		} else if (creature.creatureType === 'tennisbear') {
+			ctx.fillStyle = '#5C4033'; ctx.fillRect(0, -10, 12, 8);
+			ctx.fillStyle = '#3D2B1F'; ctx.fillRect(1, -2, 4, 3); ctx.fillRect(7, -2, 4, 3);
+			ctx.fillStyle = '#5C4033'; ctx.fillRect(10, -13, 5, 4);
+			ctx.fillStyle = '#3D2B1F'; ctx.fillRect(14, -12, 1, 1);
+			ctx.fillRect(11, -14, 1, 1);
+			ctx.fillRect(9, -15, 2, 2);
+		}
+}
+	//old creatures
+ /*if (creature.creatureType === 'fox') {
+	ctx.fillStyle = '#C06014'; ctx.fillRect(0, -8, 8, 4);
+	ctx.fillStyle = '#333'; ctx.fillRect(1, -4, 2, 3); ctx.fillRect(5, -4, 2, 3);
+	ctx.fillStyle = 'white'; ctx.fillRect(7, -8, 3, 2);
+	ctx.fillStyle = '#333'; ctx.fillRect(9, -8, 1, 1); ctx.fillRect(6, -9, 1, 1);
+	ctx.fillRect(3, -11, 2, 2);
+	ctx.fillStyle = '#C06014'; ctx.fillRect(-6, -8, 6, 2);
+	ctx.fillStyle = 'white'; ctx.fillRect(-8, -8, 2, 2);
+} else if (creature.creatureType === 'deer') {
+	ctx.fillStyle = '#8B5A2B'; ctx.fillRect(0, -12, 10, 6);
+	ctx.fillStyle = '#654321'; ctx.fillRect(1, -6, 2, 6); ctx.fillRect(7, -6, 2, 6);
+	ctx.fillStyle = '#A0522D'; ctx.fillRect(9, -15, 4, 3);
+	ctx.fillStyle = '#333'; ctx.fillRect(12, -15, 1, 1); ctx.fillRect(10, -16, 1, 1);
+	ctx.fillStyle = '#654321'; ctx.fillRect(8, -19, 1, 3); ctx.fillRect(6, -21, 1, 3);
+} else if (creature.creatureType === 'rabbit') {
+	ctx.fillStyle = '#999999'; ctx.fillRect(0, -5, 5, 4);
+	ctx.fillStyle = 'white'; ctx.fillRect(4, -6, 3, 3);
+	ctx.fillStyle = '#333'; ctx.fillRect(6, -5, 1, 1);
+	ctx.fillStyle = 'white'; ctx.fillRect(3, -9, 1, 3);
+	ctx.fillRect(5, -9, 1, 3);
+} else if (creature.creatureType === 'bear') {
+	ctx.fillStyle = '#5C4033'; ctx.fillRect(0, -10, 12, 8);
+	ctx.fillStyle = '#3D2B1F'; ctx.fillRect(1, -2, 4, 3); ctx.fillRect(7, -2, 4, 3);
+	ctx.fillStyle = '#5C4033'; ctx.fillRect(10, -13, 5, 4);
+	ctx.fillStyle = '#3D2B1F'; ctx.fillRect(14, -12, 1, 1);
+	ctx.fillRect(11, -14, 1, 1);
+	ctx.fillRect(9, -15, 2, 2);
+}*/
+
+    function startAmbientLife(time) {
+        const type = (timeOfDay > 0.75 || timeOfDay < 0.25) ? 'firefly' : 'bird';
+        if (type === 'bird') {
+            const startY = globalRandom() * canvas.height / 3;
+            ambientLife.push({ type, x: -10, y: startY, vx: 1 + globalRandom(), vy: 0, life: canvas.width * 2 });
+        } else {
+            ambientLife.push({ type, x: globalRandom() * canvas.width, y: globalRandom() * canvas.height, vx: (globalRandom() - 0.5), vy: (globalRandom() - 0.5), life: 300 });
+        }
+    }
+
+    function updateAndDrawAmbientLife(time) {
+        ambientLife = ambientLife.filter(a => a.life > 0);
+        ambientLife.forEach(a => {
+            a.life--; a.x += a.vx; a.y += a.vy;
+            const drawX = Math.round(a.x);
+            const drawY = Math.round(a.y);
+            if (a.type === 'bird') {
+                const wingY = Math.sin(time / 100) * 3;
+                ctx.strokeStyle = '#333'; ctx.beginPath(); ctx.moveTo(drawX - 3, drawY + wingY); ctx.lineTo(drawX, drawY); ctx.lineTo(drawX + 3, drawY + wingY); ctx.stroke();
+            } else if (a.type === 'firefly') {
+                ctx.fillStyle = `rgba(220, 255, 180, ${Math.sin(time/200 + a.x) * 0.5 + 0.5})`;
+                ctx.beginPath(); ctx.arc(drawX, drawY, 2, 0, Math.PI*2); ctx.fill();
+            } else if (a.type === 'leaf') {
+                a.rotation += a.rotSpeed;
+                ctx.save();
+                ctx.translate(drawX, drawY);
+                ctx.rotate(a.rotation);
+                ctx.fillStyle = `rgba(100, 50, 20, ${a.life / 200})`;
+                ctx.fillRect(-2, -1, 4, 2);
+                ctx.restore();
+            }
+        });
+    }
+
+    function erodeLandscape() {
+        /*let erodedTrees = 0;
+        for(let i=0; i < 500; i++){
+            const x = Math.floor(globalRandom() * canvas.width);
+            const waterLevel = canvas.height - canvas.height/7;
+            if(landscapeHeightMap[x] > waterLevel) {
+                landscapeHeightMap[x] -= 1;
+                landCtx.clearRect(x, landscapeHeightMap[x], 1, 1);
+            }
+        }
+        activePlants.forEach(plant => {
+            if(erodedTrees < 2 && globalRandom() < 0.1 && plant.screenY > landscapeHeightMap[Math.round(plant.screenX)] + 10 && plant.status === 'idle') {
+                plant.status = 'falling';
+                erodedTrees++;
+            }
+        });*/
+    }
+
+    function updatePlantListUI() {
+        plantListDiv.innerHTML = '';
+        if (activePlants.size === 0) {
+            plantListDiv.innerHTML = '<p style="text-align:center;color:#888;font-style:italic;">Your arboretum is empty.</p>';
+            return;
+        }
+        const sortedForUI = [...activePlants.values()].sort((a, b) => parseInt(a.id) - parseInt(b.id));
+        for (const plant of sortedForUI) {
+            const item = document.createElement('div');
+            item.className = 'plant-item';
+            item.innerHTML = `<span>${plant.name}</span><button class="remove-btn" data-id="${plant.id}">X</button>`;
+            const button = item.querySelector('.remove-btn');
+            if (plant.status !== 'idle' && plant.status !== 'growing') {
+                button.disabled = true;
+                item.style.opacity = 0.5;
+            }
+            plantListDiv.appendChild(item);
+        }
+    }
+
+    function updateTimeAndLighting(time) {
+        timeOfDay = (time / 600000) % 1;
+        let overlayColor = 'rgba(0,0,0,0)';
+        if (timeOfDay > 0.5) { 
+             const nightProgress = (timeOfDay - 0.5) * 2;
+             overlayColor = `rgba(10, 20, 40, ${0.4 * Math.sin(nightProgress * Math.PI)})`;
+        } else {
+            const goldProgress = Math.sin(timeOfDay * 2 * Math.PI);
+            overlayColor = `rgba(255, 185, 30, ${0.10 * goldProgress})`;
+        }
+
+        ctx.fillStyle = overlayColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        seasonTimer++;
+        if (seasonTimer > 180000) {
+            seasonTimer = 0;
+            const currentIdx = seasons.indexOf(currentSeason);
+            currentSeason = seasons[(currentIdx + 1) % seasons.length];
+        }
+    }
+
+    function updateAndDrawSparkles() {
+        sparkles.forEach(s => {
+            s.life--;
+            if(s.life <= 0) {
+                 s.x = globalRandom() * canvas.width;
+                 const roundedX = Math.round(s.x);
+                 if (roundedX >= 0 && roundedX < canvas.width) {
+                    s.y = landscapeHeightMap[roundedX] + globalRandom() * (canvas.height - landscapeHeightMap[roundedX]);
+                 }
+                 s.life = s.maxLife;
+            }
+            const alpha = Math.sin((1 - s.life / s.maxLife) * Math.PI) * 0.5;
+			// Generate a random hue within the green range (e.g., 110 to 140)
+			const hue = Math.floor(Math.random() * (140 - 110 + 1)) + 110;
+			// Keep saturation and lightness high for a bright, neon feel
+			const saturation = Math.floor(Math.random() * (100 - 90 + 1)) + 90; // 90% to 100%
+			const lightness = Math.floor(Math.random() * (90 - 50 + 1)) + 50;  // 50% to 60%
+            ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
+            ctx.fillRect(s.x, s.y, 2, 2);
+        });
+    }
+
+    function updateAndDrawClouds() {
+        if(globalRandom() < 0.01 && clouds.length < 15) {
+            const puffs = Array.from({length: 5 + Math.floor(globalRandom() * 8)}, () => ({
+                dx: (globalRandom() - 0.5) * 120, dy: (globalRandom() - 0.5) * 30,
+                r: 30 + globalRandom() * 30
+            }));
+            clouds.push({ x: -250, y: globalRandom() * canvas.height / 3, speed: 0.2 + globalRandom() * 0.3, puffs, life: 1 });
+        }
+        clouds = clouds.filter(c => c.x < canvas.width + 250);
+        clouds.forEach(c => {
+            c.x += c.speed;
+            ctx.save();
+            const dayFactor = Math.sin(timeOfDay * Math.PI);
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.01 * dayFactor})`;
+            ctx.shadowColor = `rgba(255, 255, 255, ${dayFactor * 0.01})`;
+            ctx.shadowBlur = 40;
+            c.puffs.forEach(p => {
+                ctx.beginPath();
+                ctx.ellipse(c.x + p.dx, c.y + p.dy, p.r, p.r * 1, 0, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.restore();
+        });
+    }
+
+    function updateAndDrawPuddles() {
+        puddles = puddles.filter(p => p.life > 0);
+        if (puddles.length === 0) return;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height);
+        ctx.lineTo(0, landscapeHeightMap[0]);
+        for (let x = 1; x < canvas.width; x++) { if (landscapeHeightMap[x]) ctx.lineTo(x, landscapeHeightMap[x]); }
+        ctx.lineTo(canvas.width, canvas.height);
+        ctx.closePath();
+        ctx.clip();
+
+        puddles.forEach(p => {
+            p.life--;
+            if (weather.type !== 'rain') p.radius *= 0.999;
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, p.life / 200) * 0.7;
+            ctx.fillStyle = '#5a6a7a';
+            ctx.shadowColor = '#5a6a7a';
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.ellipse(p.x, p.y, p.radius, p.radius*0.5, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, p.life / 200) * 0.5;
+            ctx.beginPath();
+            ctx.ellipse(p.x, p.y, p.radius, p.radius*0.5, 0, 0, Math.PI*2);
+            ctx.clip();
+            ctx.translate(p.x, p.y + p.radius*0.5);
+            ctx.scale(1, -0.5);
+            ctx.drawImage(canvas, -p.x, -p.y - p.radius*0.5);
+            ctx.restore();
+        });
+
+        ctx.restore();
+    }
+
+    // ## UTILITY FUNCTION DEFINITIONS ## 
+    function setupCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; ctx.imageSmoothingEnabled = false; }
+    function hexToRgb(hex) { const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex); return r ? { r: parseInt(r[1], 16), g: parseInt(r[2], 16), b: parseInt(r[3], 16) } : null; }
+    function rgbToHsl(r, g, b) { r /= 255; g /= 255; b /= 255; const max = Math.max(r, g, b), min = Math.min(r, g, b); let h = 0, s = 0, l = (max + min) / 2; if (max !== min) { const d = max - min; s = l > 0.5 ? d / (2 - max - min) : d / (max + min); switch (max) { case r: h = (g - b) / d + (g < b ? 6 : 0); break; case g: h = (b - r) / d + 2; break; case b: h = (r - g) / d + 4; break; } h /= 6; } return { h, s, l }; }
+    function hslToRgb(h, s, l) { let r, g, b; if (s === 0) { r = g = b = l; } else { const hue2rgb = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < 1 / 2) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p; }; const q = l < 0.5 ? l * (1 + s) : l + s - l * s; const p = 2 * l - q; r = hue2rgb(p, q, h + 1 / 3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1 / 3); } return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) }; };
+    function rgbToString(rgb) { return `rgb(${rgb.r},${rgb.g},${rgb.b})`; }
+    
+    initialize();
+    </script>
+</body>
+</html>
