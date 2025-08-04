@@ -208,24 +208,43 @@
 							  }, 300 * i); 
 							 }
 							}
+							if(`${message.text}` == '!tennis'){
+							for (let i = 0; i < 30; i++) {
+							  setTimeout(() => {
+								startEvent('tennisbear');
+							  }, 300 * i); 
+							 }
+							}
 							if(`${message.text}` == '!sandals'){
 							for (let i = 0; i < 50; i++) {
 							  setTimeout(() => {
-								startEvent('golf', 'sandals #'+i+1);
+								startEvent('golf', 'sandals');
 							  }, 300 * i); 
+							 }
+							}
+							if(`${message.text}` == '!miyong'){
+							for (let i = 0; i < 69; i++) {
+							  setTimeout(() => {
+								startEvent('golf', 'C.R.O.');
+							  }, 400 * i); 
+							 }
+							 for (let i = 0; i < 69; i++) {
+							  setTimeout(() => {
+								startEvent('lightning');
+							  }, 200 * i); 
 							 }
 							}
 							if(`${message.text}` == '!golfparty'){
 							for (let i = 0; i < 69; i++) {
 							  setTimeout(() => {
-								startEvent('golf', `${chatter_user_name}`+' #'+i+1);
+								startEvent('golf', `${chatter_user_name}`);
 							  }, 300 * i); 
 							 }
 							}
 							if(`${message.text}` == '!golf'){
 							for (let i = 0; i < 15; i++) {
 							  setTimeout(() => {
-								startEvent('golf', `${chatter_user_name}`+' #'+i+1);
+								startEvent('golf', `${chatter_user_name}`);
 							  }, 600 * i); 
 							 }
 							}
@@ -1097,6 +1116,30 @@
 				'rabbit19', 'rabbit20', 'rabbit21', 'rabbit22', 'rabbit23', 'rabbit24', 
 				'rabbit25', 'rabbit26', 'rabbit27', 'rabbit28', 'rabbit29', 'rabbit30', 
 				'rabbit31', 'rabbit32', 'rabbit33', 'rabbit34', 'rabbit35', 'rabbit36'
+			];
+            const creatureType = creatureTypes[Math.floor(globalRandom() * creatureTypes.length)];
+            
+            const newCreature = {
+                id: Date.now(),
+                type: 'creature',
+                creatureType: creatureType,
+                x: startSide,
+                y: landscapeHeightMap[Math.round(startSide)] || (canvas.height - canvas.height / 4),
+                screenY: 0,
+                targetX: globalRandom() * (canvas.width - 200) + 100,
+                targetY: 0,
+                speed: (startSide < 0 ? 1 : -1) * (0.3 + globalRandom() * 0.4),
+                life: 3000 + globalRandom() * 2000,
+                state: 'roaming',
+                state_timer: 200 + globalRandom() * 200,
+                animation_timer: 0,
+            };
+            newCreature.targetY = landscapeHeightMap[Math.round(newCreature.targetX)] || newCreature.y;
+            activeCreatures.add(newCreature);
+        } else if (type === 'tennisbear') {
+            const startSide = globalRandom() < 0.5 ? -40 : canvas.width + 40;
+            const creatureTypes = [
+				'tennisbear', 'tennisbear'
 			];
             const creatureType = creatureTypes[Math.floor(globalRandom() * creatureTypes.length)];
             
