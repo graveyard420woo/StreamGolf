@@ -5,6 +5,8 @@ This is a dynamic overlay that creates a random, procedural golf course landscap
 Why not play golf while you're also streaming, right!? 
 Add it as a full screen (1920x1080) browser source. 
 
+https://graveyard420woo.github.io/StreamGolf/
+
 Commands:
 
   !golf - your golfer takes ten shots
