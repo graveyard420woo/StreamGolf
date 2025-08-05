@@ -533,7 +533,7 @@
         landscapeCanvas.width = canvas.width;
         landscapeCanvas.height = canvas.height;
         landCtx = landscapeCanvas.getContext('2d');
-        const landscapeHeight = canvas.height / 15;
+        const landscapeHeight = canvas.height / 17; 
         const startY = canvas.height - landscapeHeight;
         const hills = Array.from({length: 4}, () => ({ amp: globalRandom() * landscapeHeight / 3, freq: globalRandom() * 0.01 + 0.005, phase: globalRandom() * Math.PI * 2 }));
         for (let x = 0; x < canvas.width; x++) {
@@ -831,7 +831,7 @@
     }
 
     function animate(time) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        //ctx.clearRect(0, 0, canvas.width, canvas.height);
 		
 		updateTimeAndLighting(time);
 
@@ -2204,6 +2204,7 @@
 //
     function updateAndDrawHoleInOne(e) {
         if(e.life === 239) {
+			const messageOnHIOID = 1;
             for(let i=0; i < 50; i++) {
                 const angle = globalRandom() * Math.PI * 2;
                 const speed = globalRandom() * 3 + 1;
@@ -2219,7 +2220,10 @@
 		
 		if(e.life == 237) {
 			const message = `${e.name}`+' got a Hole in ONE!';
-			sendTwitchChatMessage(my_user_id, message);
+			if (messageOnHIOID == 1){
+				sendTwitchChatMessage(my_user_id, message);
+				messageOnHIOID = 0;
+			}
 		}
 
         e.particles.forEach(p => {
