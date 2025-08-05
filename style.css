@@ -258,6 +258,7 @@ input[type="button"], button {
 
 .text{
     color: #fff;
+	padding-bottom: 13px;
     font-size: 28px;
     font-weight: 300;
     display: block;
