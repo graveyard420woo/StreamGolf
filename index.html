@@ -240,6 +240,7 @@
 							  }, 200 * i); 
 							 }
 							}
+							/*
 							if(`${message.text}` == '!golfparty'){
 							for (let i = 0; i < 669; i++) {
 							  setTimeout(() => {
@@ -247,6 +248,7 @@
 							  }, 300 * i); 
 							 }
 							}
+							*/
 							if(`${message.text}` == '!golf'){
 							startEvent('creature');
 							for (let i = 0; i < 15; i++) {
@@ -525,60 +527,146 @@
 
     // ## GENERATION ENGINES ##
     function generateLandscape() {
-        landscapeCanvas = document.createElement('canvas');
-        landscapeHeightMap = new Array(canvas.width).fill(0);
-        landscapeCanvas.width = canvas.width;
-        landscapeCanvas.height = canvas.height;
-        landCtx = landscapeCanvas.getContext('2d');
-        const landscapeHeight = canvas.height / 17; 
-        const startY = canvas.height - landscapeHeight;
-        const hills = Array.from({length: 4}, () => ({ amp: globalRandom() * landscapeHeight / 3, freq: globalRandom() * 0.01 + 0.005, phase: globalRandom() * Math.PI * 2 }));
-        for (let x = 0; x < canvas.width; x++) {
-            let yOffset = 0;
-            hills.forEach(h => yOffset += Math.sin(x * h.freq + h.phase) * h.amp);
-            const hillTopY = startY + yOffset;
-            landscapeHeightMap[x] = hillTopY;
-            const gradient = landCtx.createLinearGradient(x, hillTopY, x, canvas.height);
-            gradient.addColorStop(0, `rgb(100, 140, 80)`);
-            gradient.addColorStop(0.5, `rgb(70, 105, 55)`);
-            gradient.addColorStop(1, `rgb(55, 75, 45)`);
+    landscapeCanvas = document.createElement('canvas');
+    landscapeHeightMap = new Array(canvas.width).fill(0);
+    landscapeCanvas.width = canvas.width;
+    landscapeCanvas.height = canvas.height;
+    landCtx = landscapeCanvas.getContext('2d');
+
+    // Sky Gradient
+    const skyGradient = landCtx.createLinearGradient(0, 0, 0, canvas.height);
+    skyGradient.addColorStop(0, '#87CEEB'); // Light Sky Blue
+    skyGradient.addColorStop(1, '#B0E0E6'); // Powder Blue
+    landCtx.fillStyle = skyGradient;
+    landCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const landscapeHeight = canvas.height / 17;
+    const startY = canvas.height - landscapeHeight * 5;
+
+    // More complex terrain generation using multiple layers of sine waves
+    const hills = Array.from({
+        length: 6
+    }, () => ({
+        amp: globalRandom() * landscapeHeight / 2,
+        freq: globalRandom() * 0.01 + 0.003,
+        phase: globalRandom() * Math.PI * 2
+    }));
+
+    for (let x = 0; x < canvas.width; x++) {
+        let yOffset = 0;
+        hills.forEach(h => yOffset += Math.sin(x * h.freq + h.phase) * h.amp);
+        const hillTopY = startY + yOffset;
+        landscapeHeightMap[x] = hillTopY;
+    }
+
+    // Draw the main landscape
+    for (let x = 0; x < canvas.width; x++) {
+        const hillTopY = landscapeHeightMap[x];
+        const gradient = landCtx.createLinearGradient(x, hillTopY, x, canvas.height);
+        gradient.addColorStop(0, `rgb(100, 150, 80)`);
+        gradient.addColorStop(0.5, `rgb(70, 115, 55)`);
+        gradient.addColorStop(1, `rgb(55, 85, 45)`);
+        landCtx.fillStyle = gradient;
+        landCtx.fillRect(x, hillTopY, 1, canvas.height - hillTopY);
+    }
+
+    // Place the golf hole and create a "green" around it
+    const holeX = globalRandom() * (canvas.width - 400) + 200;
+    const greenWidth = 120;
+    const greenStartIndex = Math.max(0, Math.round(holeX) - greenWidth / 2);
+    const greenEndIndex = Math.min(canvas.width - 1, Math.round(holeX) + greenWidth / 2);
+
+    for (let x = greenStartIndex; x < greenEndIndex; x++) {
+        const influence = 1 - Math.abs(x - holeX) / (greenWidth / 2);
+        landscapeHeightMap[x] = landscapeHeightMap[Math.round(holeX)] * influence + landscapeHeightMap[x] * (1 - influence);
+    }
+
+    for (let x = greenStartIndex; x < greenEndIndex; x++) {
+        const hillTopY = landscapeHeightMap[x];
+        const gradient = landCtx.createLinearGradient(x, hillTopY, x, hillTopY + 50);
+        gradient.addColorStop(0, `rgb(120, 180, 100)`);
+        gradient.addColorStop(1, `rgb(90, 140, 80)`);
+        landCtx.fillStyle = gradient;
+        landCtx.fillRect(x, hillTopY, 1, canvas.height - hillTopY);
+    }
+
+    const holeY = landscapeHeightMap[Math.round(holeX)] + 2;
+    golfHole = {
+        x: holeX,
+        y: holeY,
+        radius: 5
+    };
+
+    // Add sand traps
+    const numSandTraps = 3;
+    for (let i = 0; i < numSandTraps; i++) {
+        const trapX = globalRandom() * canvas.width;
+        const trapWidth = globalRandom() * 80 + 40;
+        const trapDepth = globalRandom() * 10 + 5;
+        const trapStartIndex = Math.max(0, Math.round(trapX) - trapWidth / 2);
+        const trapEndIndex = Math.min(canvas.width - 1, Math.round(trapX) + trapWidth / 2);
+
+        for (let x = trapStartIndex; x < trapEndIndex; x++) {
+            const influence = Math.sin((x - trapStartIndex) / trapWidth * Math.PI);
+            const newY = landscapeHeightMap[x] + influence * trapDepth;
+            const gradient = landCtx.createLinearGradient(x, newY - 5, x, newY + 20);
+            gradient.addColorStop(0, `rgb(240, 230, 140)`);
+            gradient.addColorStop(1, `rgb(210, 180, 140)`);
             landCtx.fillStyle = gradient;
-            landCtx.fillRect(x, hillTopY, 1, canvas.height - hillTopY);
-        }
-
-        const imageData = landCtx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-            if (data[i+3] > 0) {
-                const noise = (globalRandom() - 0.5) * 30;
-                data[i] = Math.max(0, Math.min(255, data[i] + noise));
-                data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
-                data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
-            }
-        }
-        landCtx.putImageData(imageData, 0, 0);
-
-        const holeX = globalRandom() * (canvas.width - 400) + 200;
-        const holeY = landscapeHeightMap[Math.round(holeX)] + 2;
-        golfHole = {x: holeX, y: holeY, radius: 4};
-        landCtx.fillStyle = '#1a1a1a';
-        landCtx.beginPath();
-        landCtx.ellipse(holeX, holeY, golfHole.radius, golfHole.radius * 0.5, 0, 0, Math.PI * 2);
-        landCtx.fill();
-        landCtx.strokeStyle = '#cccccc';
-        landCtx.lineWidth = 1;
-        landCtx.beginPath();
-        landCtx.ellipse(holeX, holeY, golfHole.radius + 0.5, golfHole.radius * 0.5 + 0.25, 0, 0, Math.PI * 2);
-        landCtx.stroke();
-
-
-        sparkles = [];
-        for (let i = 0; i < 50; i++) {
-             const x = globalRandom() * canvas.width;
-             const y = landscapeHeightMap[Math.round(x)] + globalRandom() * (canvas.height - landscapeHeightMap[Math.round(x)]);
-             sparkles.push({ x, y, life: globalRandom() * 200, maxLife: 100 + globalRandom() * 100 });
+            landCtx.fillRect(x, newY, 1, canvas.height - newY);
+            landscapeHeightMap[x] = newY;
         }
     }
+
+
+    // Draw the golf hole
+    landCtx.fillStyle = '#1a1a1a';
+    landCtx.beginPath();
+    landCtx.ellipse(holeX, holeY, golfHole.radius, golfHole.radius * 0.5, 0, 0, Math.PI * 2);
+    landCtx.fill();
+
+    // Draw the flagpole
+    landCtx.strokeStyle = '#FFFFFF';
+    landCtx.lineWidth = 2;
+    landCtx.beginPath();
+    landCtx.moveTo(holeX, holeY);
+    landCtx.lineTo(holeX, holeY - 30);
+    landCtx.stroke();
+
+    landCtx.fillStyle = '#FF0000';
+    landCtx.beginPath();
+    landCtx.moveTo(holeX, holeY - 30);
+    landCtx.lineTo(holeX + 10, holeY - 25);
+    landCtx.lineTo(holeX, holeY - 20);
+    landCtx.closePath();
+    landCtx.fill();
+
+
+    const imageData = landCtx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] > 0) { // If pixel is not transparent
+            const noise = (globalRandom() - 0.5) * 20;
+            data[i] = Math.max(0, Math.min(255, data[i] + noise));
+            data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
+            data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
+        }
+    }
+    landCtx.putImageData(imageData, 0, 0);
+
+
+    sparkles = [];
+    for (let i = 0; i < 50; i++) {
+        const x = globalRandom() * canvas.width;
+        const y = landscapeHeightMap[Math.round(x)] + globalRandom() * (canvas.height - landscapeHeightMap[Math.round(x)]);
+        sparkles.push({
+            x,
+            y,
+            life: globalRandom() * 200,
+            maxLife: 100 + globalRandom() * 100
+        });
+    }
+}```
 
     const drawLeafMass = (pixels, cx, cy, cz, radius, color, sway, random) => {
         const subCircles = 4 + Math.floor(random() * 5);
