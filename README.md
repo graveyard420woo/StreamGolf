@@ -38,6 +38,6 @@ Commands:
   !tennis
   !rabbits
 
-Project researchers & devs: S2Shot, ShadowMario98, Gizar0, graveyard420woo
+Project researchers & devs: S2Shot, ShadowMario98, Gizar0, Spenny__420, graveyard420woo
 
 
