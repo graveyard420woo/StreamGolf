@@ -2005,6 +2005,14 @@
         golfer.screenY = landscapeHeightMap[Math.round(golfer.x)] || golfer.screenY;
         golfer.animation_timer++;
         
+        // --- Skin Tone Assignment ---
+        // If the golfer doesn't have a skinTone property yet, assign one.
+        // This runs only ONCE per golfer.
+        if (!golfer.skinTone) {
+            const skinTones = ["#8d5524", "#c68642", "#e0ac69", "#f1c27d", "#ffdbac"];
+            golfer.skinTone = skinTones[Math.floor(Math.random() * skinTones.length)];
+        }
+        
         // State Machine for Golfer's Actions
         if (golfer.stage === 'walking-in') {
             golfer.x += golfer.speed;
@@ -2064,18 +2072,14 @@
         // --- Drawing the Golfer ---
         ctx.save();
         ctx.translate(golfer.x, golfer.screenY);
-			const direction = Math.sign(golfer.speed);
-    		ctx.scale(direction, 1); // Face the correct direction new way	
-        //ctx.scale(Math.sign(golfer.speed), 1); // Face the correct direction old way
+		const direction = Math.sign(golfer.speed);
+    	ctx.scale(direction, 1); // Face the correct direction new way	
         let frame = 'idle';
         if(golfer.stage === 'swinging') frame = 'swing';
         
-        // --- Skin Tone Array & Randomizer ---
-        const skinTones = ["#8d5524", "#c68642", "#e0ac69", "#f1c27d", "#ffdbac"];
-        const randomSkinTone = skinTones[Math.floor(Math.random() * skinTones.length)];
-        
         ctx.fillStyle = golfer.shirtColor; ctx.fillRect(-3 * scale, -25 * scale, 8 * scale, 12 * scale);
-        ctx.fillStyle = randomSkinTone; ctx.fillRect(-2 * scale, -31 * scale, 6 * scale, 6 * scale);
+        // Use the consistent skin tone from the golfer object
+        ctx.fillStyle = golfer.skinTone; ctx.fillRect(-2 * scale, -31 * scale, 6 * scale, 6 * scale);
         ctx.fillStyle = '#555'; ctx.fillRect(-3 * scale, -13 * scale, 4 * scale, 13 * scale); ctx.fillRect(2 * scale, -13 * scale, 4 * scale, 13 * scale);
         
         ctx.save();
@@ -2084,27 +2088,27 @@
             const swingProgress = Math.sin((golfer.animation_timer / 40) * Math.PI);
             ctx.rotate(swingProgress * 2 - 1);
         }
-        ctx.fillStyle = randomSkinTone; ctx.fillRect(0, 0, 2 * scale, 8 * scale);
+
+        // Use the consistent skin tone again
+        ctx.fillStyle = golfer.skinTone; ctx.fillRect(0, 0, 2 * scale, 8 * scale);
         ctx.fillStyle = '#aaa'; ctx.fillRect(0, 8 * scale, 2 * scale, 18 * scale);
         ctx.fillStyle = '#888'; ctx.fillRect(-2 * scale, 26 * scale, 6 * scale, 3 * scale);
         ctx.restore();
         
         // --- Draw the Golfer's Name ---
 		ctx.save();
-		ctx.scale(direction, 1); // Apply the scale again to un-flip the text
+		ctx.scale(direction, 1);
 		
-		//ctx.font = `${17 * scale}px "Tiny5", sans-serif`;
 		ctx.font = '17px "Tiny5", sans-serif';
 		ctx.textAlign = 'center';
 		ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-		// We multiply the shadow offset by the direction to move it correctly
 		ctx.fillText(golfer.name, 1 * direction, -38 * scale);
 		ctx.fillStyle = 'white';
 		ctx.fillText(golfer.name, 0, -39 * scale);
 		
-		ctx.restore(); // Restore from the text-un-flipping scale
+		ctx.restore();
 		
-		ctx.restore(); // Restore from the main golfer translation and scale
+		ctx.restore();
     }
 
     function updateAndDrawGolfball(ball) {
