@@ -1,9 +1,9 @@
 <img width="50" height="49" alt="gy" src="https://github.com/user-attachments/assets/ab5c4a17-61de-497e-8c8b-ebc187725362" /><img width="250" height="162" alt="sg" src="https://github.com/user-attachments/assets/762296c0-7ecc-4811-9802-358e8aa2e09b" /><img width="50" height="49" alt="gy" src="https://github.com/user-attachments/assets/ab5c4a17-61de-497e-8c8b-ebc187725362" />
 
-
+StreamGolf by graveyard420woo v1.1
 
 This is a dynamic overlay that creates a random, procedural golf course landscape to be played by everyone in chat on your stream. 
-Why not play golf while you're also streaming, right!? 
+Why not also play golf while you're streaming, right!? 
 Add it as a full screen (1920x1080) browser source. 
 
 https://graveyard420woo.github.io/StreamGolf/
