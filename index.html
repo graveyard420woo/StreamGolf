@@ -527,126 +527,126 @@
 
     // ## GENERATION ENGINES ##
     function generateLandscape() {
-    // 1. SETUP (Original)
-    landscapeCanvas = document.createElement('canvas');
-    landscapeHeightMap = new Array(canvas.width).fill(0);
-    landscapeCanvas.width = canvas.width;
-    landscapeCanvas.height = canvas.height;
-    landCtx = landscapeCanvas.getContext('2d');
-
-    // 2. DEFINE LANDSCAPE PARAMETERS
-    const landscapeHeight = canvas.height / 17;
-    const startY = canvas.height - landscapeHeight;
-    
-    // These create the main, smooth, rolling shape of the landscape
-    const smoothHills = Array.from({ length: 3 }, () => ({
-        amp: globalRandom() * landscapeHeight / 2,
-        freq: globalRandom() * 0.007 + 0.002,
-        phase: globalRandom() * Math.PI * 2
-    }));
-    
-    // Define 0 or 1 "rough patch" to make them less frequent
-    const numRoughPatches = Math.floor(globalRandom() * 2); 
-    const roughPatches = Array.from({ length: numRoughPatches }, () => ({
-        center: globalRandom() * canvas.width,
-        width: globalRandom() * 250 + 150, // The width of the textured area
-        intensity: globalRandom() * 2 + 1, // Reduced intensity for a subtler effect
-    }));
-
-    const colorWave = { freq: 0.002, phase: globalRandom() * Math.PI * 2 };
-
-    // 3. GENERATE AND DRAW THE LANDSCAPE
-    for (let x = 0; x < canvas.width; x++) {
-        // Start with the smooth base terrain
-        let yOffset = 0;
-        smoothHills.forEach(h => yOffset += Math.sin(x * h.freq + h.phase) * h.amp);
-
-        // Add localized roughness
-        let roughnessOffset = 0;
-        roughPatches.forEach(patch => {
-            const dist = Math.abs(x - patch.center);
-            if (dist < patch.width / 2) {
-                // This creates a smooth fade-in/out at the edges of the patch
-                const influence = (1 + Math.cos(dist / (patch.width / 2) * Math.PI)) / 2;
-                
-                // --- Natural Noise Calculation ---
-                // By adding sine waves at different frequencies/amplitudes (octaves),
-                // we break the "sinewave-y" look and create more natural, bumpy terrain.
-                let fractalNoise = 0;
-                let amp = patch.intensity;
-                let freq = 0.05;
-                for(let i = 0; i < 3; i++) {
-                    fractalNoise += Math.sin(x * freq) * amp;
-                    amp *= 0.5;   // Higher frequency details have less impact
-                    freq *= 2.5;  // Increase frequency for finer details
-                }
-                
-                roughnessOffset += fractalNoise * influence;
-            }
-        });
-
-        const hillTopY = startY + yOffset + roughnessOffset;
-        landscapeHeightMap[x] = hillTopY;
-        
-        const colorOffset = Math.sin(x * colorWave.freq + colorWave.phase) * 10;
-        
-        const gradient = landCtx.createLinearGradient(x, hillTopY, x, canvas.height);
-        gradient.addColorStop(0, `rgb(${100 + colorOffset}, ${140 + colorOffset}, 80)`);
-        gradient.addColorStop(0.5, `rgb(70, 105, 55)`);
-        gradient.addColorStop(1, `rgb(55, 75, 45)`);
-        landCtx.fillStyle = gradient;
-        landCtx.fillRect(x, hillTopY, 1, canvas.height - hillTopY);
-    }
-    
-    // 4. TERRAIN HIGHLIGHT
-    landCtx.beginPath();
-    landCtx.moveTo(0, landscapeHeightMap[0]);
-    for (let x = 1; x < canvas.width; x++) {
-        landCtx.lineTo(x, landscapeHeightMap[x]);
-    }
-    landCtx.strokeStyle = 'rgba(190, 230, 170, 0.7)';
-    landCtx.lineWidth = 2;
-    landCtx.stroke();
-
-    // 5. TEXTURE
-    const imageData = landCtx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] > 0) {
-            const noise = (globalRandom() - 0.5) * 20;
-            data[i] = Math.max(0, Math.min(255, data[i] + noise));
-            data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
-            data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
-        }
-    }
-    landCtx.putImageData(imageData, 0, 0);
-
-    // 6. GOLF HOLE (Original)
-    const holeX = globalRandom() * (canvas.width - 400) + 200;
-    const holeY = landscapeHeightMap[Math.round(holeX)] + 2;
-    golfHole = { x: holeX, y: holeY, radius: 4 };
-    
-    landCtx.fillStyle = '#1a1a1a';
-    landCtx.beginPath();
-    landCtx.ellipse(holeX, holeY, golfHole.radius, golfHole.radius * 0.5, 0, 0, Math.PI * 2);
-    landCtx.fill();
-
-    landCtx.strokeStyle = '#cccccc';
-    landCtx.lineWidth = 1;
-    landCtx.beginPath();
-    landCtx.ellipse(holeX, holeY, golfHole.radius + 0.5, golfHole.radius * 0.5 + 0.25, 0, 0, Math.PI * 2);
-    landCtx.stroke();
-
-    // 7. SPARKLES (Original)
-    sparkles = [];
-    for (let i = 0; i < 50; i++) {
-        const x = globalRandom() * canvas.width;
-        const y = landscapeHeightMap[Math.round(x)] + globalRandom() * (canvas.height - landscapeHeightMap[Math.round(x)]);
-        if (isFinite(x) && isFinite(y)) {
-            sparkles.push({ x, y, life: globalRandom() * 200, maxLife: 100 + globalRandom() * 100 });
-        }
-    }
-}
+		// 1. SETUP 
+		landscapeCanvas = document.createElement('canvas');
+		landscapeHeightMap = new Array(canvas.width).fill(0);
+		landscapeCanvas.width = canvas.width;
+		landscapeCanvas.height = canvas.height;
+		landCtx = landscapeCanvas.getContext('2d');
+	
+		// 2. DEFINE LANDSCAPE PARAMETERS
+		const landscapeHeight = canvas.height / 17;
+		const startY = canvas.height - landscapeHeight;
+		
+		// These create the main, smooth, rolling shape of the landscape
+		const smoothHills = Array.from({ length: 3 }, () => ({
+			amp: globalRandom() * landscapeHeight / 2,
+			freq: globalRandom() * 0.007 + 0.002,
+			phase: globalRandom() * Math.PI * 2
+		}));
+		
+		// Define 0 or 1 "rough patch" to make them less frequent
+		const numRoughPatches = Math.floor(globalRandom() * 2); 
+		const roughPatches = Array.from({ length: numRoughPatches }, () => ({
+			center: globalRandom() * canvas.width,
+			width: globalRandom() * 250 + 150, // The width of the textured area
+			intensity: globalRandom() * 2 + 1, // Reduced intensity for a subtler effect
+		}));
+	
+		const colorWave = { freq: 0.002, phase: globalRandom() * Math.PI * 2 };
+	
+		// 3. GENERATE AND DRAW THE LANDSCAPE
+		for (let x = 0; x < canvas.width; x++) {
+			// Start with the smooth base terrain
+			let yOffset = 0;
+			smoothHills.forEach(h => yOffset += Math.sin(x * h.freq + h.phase) * h.amp);
+	
+			// Add localized roughness
+			let roughnessOffset = 0;
+			roughPatches.forEach(patch => {
+				const dist = Math.abs(x - patch.center);
+				if (dist < patch.width / 2) {
+					// This creates a smooth fade-in/out at the edges of the patch
+					const influence = (1 + Math.cos(dist / (patch.width / 2) * Math.PI)) / 2;
+					
+					// --- Natural Noise Calculation ---
+					// By adding sine waves at different frequencies/amplitudes (octaves),
+					// we break the "sinewave-y" look and create more natural, bumpy terrain.
+					let fractalNoise = 0;
+					let amp = patch.intensity;
+					let freq = 0.05;
+					for(let i = 0; i < 3; i++) {
+						fractalNoise += Math.sin(x * freq) * amp;
+						amp *= 0.4;   // Higher frequency details have less impact
+						freq *= 2.5;  // Increase frequency for finer details
+					}
+					
+					roughnessOffset += fractalNoise * influence;
+				}
+			});
+	
+			const hillTopY = startY + yOffset + roughnessOffset;
+			landscapeHeightMap[x] = hillTopY;
+			
+			const colorOffset = Math.sin(x * colorWave.freq + colorWave.phase) * 10;
+			
+			const gradient = landCtx.createLinearGradient(x, hillTopY, x, canvas.height);
+			gradient.addColorStop(0, `rgb(${100 + colorOffset}, ${140 + colorOffset}, 80)`);
+			gradient.addColorStop(0.5, `rgb(70, 105, 55)`);
+			gradient.addColorStop(1, `rgb(55, 75, 45)`);
+			landCtx.fillStyle = gradient;
+			landCtx.fillRect(x, hillTopY, 1, canvas.height - hillTopY);
+		}
+		
+		// 4. TERRAIN HIGHLIGHT
+		landCtx.beginPath();
+		landCtx.moveTo(0, landscapeHeightMap[0]);
+		for (let x = 1; x < canvas.width; x++) {
+			landCtx.lineTo(x, landscapeHeightMap[x]);
+		}
+		landCtx.strokeStyle = 'rgba(190, 230, 170, 0.7)';
+		landCtx.lineWidth = 2;
+		landCtx.stroke();
+	
+		// 5. TEXTURE
+		const imageData = landCtx.getImageData(0, 0, canvas.width, canvas.height);
+		const data = imageData.data;
+		for (let i = 0; i < data.length; i += 4) {
+			if (data[i + 3] > 0) {
+				const noise = (globalRandom() - 0.5) * 20;
+				data[i] = Math.max(0, Math.min(255, data[i] + noise));
+				data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
+				data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
+			}
+		}
+		landCtx.putImageData(imageData, 0, 0);
+	
+		// 6. GOLF HOLE (Original)
+		const holeX = globalRandom() * (canvas.width - 400) + 200;
+		const holeY = landscapeHeightMap[Math.round(holeX)] + 2;
+		golfHole = { x: holeX, y: holeY, radius: 4 };
+		
+		landCtx.fillStyle = '#1a1a1a';
+		landCtx.beginPath();
+		landCtx.ellipse(holeX, holeY, golfHole.radius, golfHole.radius * 0.5, 0, 0, Math.PI * 2);
+		landCtx.fill();
+	
+		landCtx.strokeStyle = '#cccccc';
+		landCtx.lineWidth = 1;
+		landCtx.beginPath();
+		landCtx.ellipse(holeX, holeY, golfHole.radius + 0.5, golfHole.radius * 0.5 + 0.25, 0, 0, Math.PI * 2);
+		landCtx.stroke();
+	
+		// 7. SPARKLES (Original)
+		sparkles = [];
+		for (let i = 0; i < 50; i++) {
+			const x = globalRandom() * canvas.width;
+			const y = landscapeHeightMap[Math.round(x)] + globalRandom() * (canvas.height - landscapeHeightMap[Math.round(x)]);
+			if (isFinite(x) && isFinite(y)) {
+				sparkles.push({ x, y, life: globalRandom() * 200, maxLife: 100 + globalRandom() * 100 });
+			}
+		}
+	}
 
     const drawLeafMass = (pixels, cx, cy, cz, radius, color, sway, random) => {
         const subCircles = 4 + Math.floor(random() * 5);
