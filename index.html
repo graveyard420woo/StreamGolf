@@ -832,6 +832,8 @@
 
     function animate(time) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+		
+		updateTimeAndLighting(time);
 
         if (landscapeCanvas) ctx.drawImage(landscapeCanvas, 0, 0);
 
@@ -847,7 +849,7 @@
         }
         if (globalRandom() < 0.00001 && events.length === 0) startEvent('meteor');
         if (globalRandom() < 0.0009 && activeCreatures.size < 11) startEvent('creature');
-        if (globalRandom() < 0.003 && ambientLife.length < 15) startAmbientLife(time);
+        if (globalRandom() < 0.003 && ambientLife.length < 25) startAmbientLife(time);
         
         const renderables = [...activePlants.values(), ...activeCreatures, ...events.filter(e => e.type === 'golfBall' || e.type === 'golfer' || e.type === 'holeInOne')];
         renderables.sort((a, b) => (a.screenY + (a.z || 0)) - (b.screenY + (b.z || 0)));
@@ -2785,6 +2787,21 @@
             plantListDiv.appendChild(item);
         }
     }
+	
+	function updateTimeAndLighting(time) {
+        timeOfDay = (time / 600000) % 1;
+        if (timeOfDay > 0.5) { 
+             const nightProgress = (timeOfDay - 0.5) * 2;
+        } else {
+            const goldProgress = Math.sin(timeOfDay * 2 * Math.PI);
+        }
+        seasonTimer++;
+        if (seasonTimer > 180000) {
+            seasonTimer = 0;
+            const currentIdx = seasons.indexOf(currentSeason);
+            currentSeason = seasons[(currentIdx + 1) % seasons.length];
+        }
+    }
 
     function updateAndDrawSparkles() {
         sparkles.forEach(s => {
@@ -2804,7 +2821,7 @@
 			const saturation = Math.floor(Math.random() * (100 - 90 + 1)) + 90; // 90% to 100%
 			const lightness = Math.floor(Math.random() * (90 - 50 + 1)) + 50;  // 50% to 60%
             ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
-            ctx.fillRect(s.x, s.y, 2, 2);
+            ctx.fillRect(s.x, s.y, 1.6, 1.6);
         });
     }
 
