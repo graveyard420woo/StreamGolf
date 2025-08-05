@@ -4,7 +4,9 @@ StreamGolf by graveyard420woo v1.1
 
 This is a dynamic overlay that creates a random, procedural golf course landscape to be played by everyone in chat on your stream. 
 Why not also play golf while you're streaming, right!? 
-Add it as a full screen (1920x1080) browser source. 
+Connect your twitch and add the resulting URL as a full screen browser source. 1920 x 1080 works great.
+It will render procedurally at any smaller or larger size.
+2560 x 1440 (1440p) and 3840 x 2160 (4k) will generate more expansive landscapes (not just scale)
 
 https://graveyard420woo.github.io/StreamGolf/
 
