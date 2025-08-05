@@ -190,16 +190,14 @@
 							if(`${message.text}` == '!winter'){
 							for (let i = 0; i < 50; i++) {
 							  setTimeout(() => {
-								startEvent('meteor');
-							  }, 200 * i); 
-							 }
-							}
-							if(`${message.text}` == '!winter'){
-							for (let i = 0; i < 50; i++) {
-							  setTimeout(() => {
 								startEvent('golf', 'winter');
 								startEvent('creature');
 							  }, 300 * i); 
+							 }
+							 for (let i = 0; i < 50; i++) {
+							  setTimeout(() => {
+								startEvent('meteor');
+							  }, 200 * i); 
 							 }
 							}
 							if(`${message.text}` == '!sandals'){
@@ -208,11 +206,17 @@
 								startEvent('lightning');
 							  }, 300 * i); 
 							 }
+							 for (let i = 0; i < 50; i++) {
+							  setTimeout(() => {
+								startEvent('golf', 'sandals');
+							  }, 300 * i); 
+							 }
 							}
 							if(`${message.text}` == '!tennis'){
 							for (let i = 0; i < 30; i++) {
 							  setTimeout(() => {
 								startEvent('tennisbear');
+								startEvent('golf', 'tennis');
 							  }, 300 * i); 
 							 }
 							}
@@ -220,13 +224,6 @@
 							for (let i = 0; i < 40; i++) {
 							  setTimeout(() => {
 								startEvent('creature');
-							  }, 300 * i); 
-							 }
-							}
-							if(`${message.text}` == '!sandals'){
-							for (let i = 0; i < 50; i++) {
-							  setTimeout(() => {
-								startEvent('golf', 'sandals');
 							  }, 300 * i); 
 							 }
 							}
@@ -244,7 +241,7 @@
 							 }
 							}
 							if(`${message.text}` == '!golfparty'){
-							for (let i = 0; i < 69; i++) {
+							for (let i = 0; i < 669; i++) {
 							  setTimeout(() => {
 								startEvent('golf', `${chatter_user_name}`);
 							  }, 300 * i); 
@@ -2005,9 +2002,6 @@
         golfer.screenY = landscapeHeightMap[Math.round(golfer.x)] || golfer.screenY;
         golfer.animation_timer++;
         
-        // --- Skin Tone Assignment ---
-        // If the golfer doesn't have a skinTone property yet, assign one.
-        // This runs only ONCE per golfer.
         if (!golfer.skinTone) {
             const skinTones = ["#8d5524", "#c68642", "#e0ac69", "#f1c27d", "#ffdbac"];
             golfer.skinTone = skinTones[Math.floor(Math.random() * skinTones.length)];
@@ -2078,7 +2072,6 @@
         if(golfer.stage === 'swinging') frame = 'swing';
         
         ctx.fillStyle = golfer.shirtColor; ctx.fillRect(-3 * scale, -25 * scale, 8 * scale, 12 * scale);
-        // Use the consistent skin tone from the golfer object
         ctx.fillStyle = golfer.skinTone; ctx.fillRect(-2 * scale, -31 * scale, 6 * scale, 6 * scale);
         ctx.fillStyle = '#555'; ctx.fillRect(-3 * scale, -13 * scale, 4 * scale, 13 * scale); ctx.fillRect(2 * scale, -13 * scale, 4 * scale, 13 * scale);
         
@@ -2089,7 +2082,6 @@
             ctx.rotate(swingProgress * 2 - 1);
         }
 
-        // Use the consistent skin tone again
         ctx.fillStyle = golfer.skinTone; ctx.fillRect(0, 0, 2 * scale, 8 * scale);
         ctx.fillStyle = '#aaa'; ctx.fillRect(0, 8 * scale, 2 * scale, 18 * scale);
         ctx.fillStyle = '#888'; ctx.fillRect(-2 * scale, 26 * scale, 6 * scale, 3 * scale);
@@ -2165,7 +2157,7 @@
                     // --- Creature Reaction: Temporary speed boost ---
 					creature.isSpedUp = true; // A flag to prevent multiple hits from stacking speed boosts
                     const originalSpeed = creature.speed;
-                    creature.speed *= 2.2; // Give it a significant, but short, burst of speed
+                    creature.speed *= 1.8; // Give it a significant, but short, burst of speed
 
                     // Set a timer to return the creature to its normal speed after half a second
                     setTimeout(() => {
