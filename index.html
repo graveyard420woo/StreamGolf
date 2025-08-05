@@ -527,96 +527,122 @@
 
     // ## GENERATION ENGINES ##
     function generateLandscape() {
-		landscapeCanvas = document.createElement('canvas');
-		landscapeHeightMap = new Array(canvas.width).fill(0);
-		landscapeCanvas.width = canvas.width;
-		landscapeCanvas.height = canvas.height;
-		landCtx = landscapeCanvas.getContext('2d');
-	
-		// More complex terrain generation using multiple layers of sine waves
-		const hills = Array.from({
-			length: 6
-		}, () => ({
-			amp: globalRandom() * landscapeHeight / 2,
-			freq: globalRandom() * 0.01 + 0.003,
-			phase: globalRandom() * Math.PI * 2
-		}));
-	
-		for (let x = 0; x < canvas.width; x++) {
-			let yOffset = 0;
-			hills.forEach(h => yOffset += Math.sin(x * h.freq + h.phase) * h.amp);
-			const hillTopY = startY + yOffset;
-			landscapeHeightMap[x] = hillTopY;
-		}
-	
-		// Draw the main landscape
-		for (let x = 0; x < canvas.width; x++) {
-			const hillTopY = landscapeHeightMap[x];
-			const gradient = landCtx.createLinearGradient(x, hillTopY, x, canvas.height);
-			gradient.addColorStop(0, `rgb(100, 150, 80)`);
-			gradient.addColorStop(0.5, `rgb(70, 115, 55)`);
-			gradient.addColorStop(1, `rgb(55, 85, 45)`);
-			landCtx.fillStyle = gradient;
-			landCtx.fillRect(x, hillTopY, 1, canvas.height - hillTopY);
-		}
-	
-		// Place the golf hole and create a "green" around it
-		const holeX = globalRandom() * (canvas.width - 400) + 200;
-		const greenWidth = 120;
-		const greenStartIndex = Math.max(0, Math.round(holeX) - greenWidth / 2);
-		const greenEndIndex = Math.min(canvas.width - 1, Math.round(holeX) + greenWidth / 2);
-	
-		for (let x = greenStartIndex; x < greenEndIndex; x++) {
-			const influence = 1 - Math.abs(x - holeX) / (greenWidth / 2);
-			landscapeHeightMap[x] = landscapeHeightMap[Math.round(holeX)] * influence + landscapeHeightMap[x] * (1 - influence);
-		}
-	
-		for (let x = greenStartIndex; x < greenEndIndex; x++) {
-			const hillTopY = landscapeHeightMap[x];
-			const gradient = landCtx.createLinearGradient(x, hillTopY, x, hillTopY + 50);
-			gradient.addColorStop(0, `rgb(120, 180, 100)`);
-			gradient.addColorStop(1, `rgb(90, 140, 80)`);
-			landCtx.fillStyle = gradient;
-			landCtx.fillRect(x, hillTopY, 1, canvas.height - hillTopY);
-		}
-	
-		const holeY = landscapeHeightMap[Math.round(holeX)] + 2;
-		golfHole = {
-			x: holeX,
-			y: holeY,
-			radius: 5
-		};
-	
-		// Draw the golf hole
-		landCtx.fillStyle = '#1a1a1a';
-		landCtx.beginPath();
-		landCtx.ellipse(holeX, holeY, golfHole.radius, golfHole.radius * 0.5, 0, 0, Math.PI * 2);
-		landCtx.fill();
-	
-		const imageData = landCtx.getImageData(0, 0, canvas.width, canvas.height);
-		const data = imageData.data;
-		for (let i = 0; i < data.length; i += 4) {
-			if (data[i + 3] > 0) { // If pixel is not transparent
-				const noise = (globalRandom() - 0.5) * 20;
-				data[i] = Math.max(0, Math.min(255, data[i] + noise));
-				data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
-				data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
-			}
-		}
-		landCtx.putImageData(imageData, 0, 0);	
-	
-		sparkles = [];
-		for (let i = 0; i < 50; i++) {
-			const x = globalRandom() * canvas.width;
-			const y = landscapeHeightMap[Math.round(x)] + globalRandom() * (canvas.height - landscapeHeightMap[Math.round(x)]);
-			sparkles.push({
-				x,
-				y,
-				life: globalRandom() * 200,
-				maxLife: 100 + globalRandom() * 100
-			});
-		}
-	}
+    // 1. SETUP (Original)
+    landscapeCanvas = document.createElement('canvas');
+    landscapeHeightMap = new Array(canvas.width).fill(0);
+    landscapeCanvas.width = canvas.width;
+    landscapeCanvas.height = canvas.height;
+    landCtx = landscapeCanvas.getContext('2d');
+
+    // 2. BACKGROUND HILLS (New Feature for Depth)
+    // Draw 2 layers of hills in the "distance". They are darker and less detailed.
+    const backgroundHillLayers = 2;
+    for (let i = 0; i < backgroundHillLayers; i++) {
+        const startY = canvas.height - (canvas.height / 10) * (i + 1);
+        const hills = Array.from({ length: 3 }, () => ({
+            amp: globalRandom() * (canvas.height / 15) / (i + 1), // Smaller amplitude for distant hills
+            freq: globalRandom() * 0.005 + 0.001,
+            phase: globalRandom() * Math.PI * 2
+        }));
+        
+        for (let x = 0; x < canvas.width; x++) {
+            let yOffset = 0;
+            hills.forEach(h => yOffset += Math.sin(x * h.freq + h.phase) * h.amp);
+            const hillTopY = startY + yOffset;
+
+            // Darker, less saturated colors for the background
+            const gradient = landCtx.createLinearGradient(x, hillTopY, x, canvas.height);
+            const baseDarkness = 40 - i * 10;
+            gradient.addColorStop(0, `rgb(${baseDarkness}, ${baseDarkness + 20}, ${baseDarkness})`);
+            gradient.addColorStop(1, `rgb(${baseDarkness - 20}, ${baseDarkness}, ${baseDarkness - 20})`);
+            
+            landCtx.fillStyle = gradient;
+            landCtx.fillRect(x, hillTopY, 1, canvas.height - hillTopY);
+        }
+    }
+
+    // 3. MAIN LANDSCAPE GENERATION (Improved Terrain Complexity)
+    const landscapeHeight = canvas.height / 17;
+    const startY = canvas.height - landscapeHeight;
+    // Use more "octaves" for detailed terrain: large rolling hills plus smaller bumps.
+    const mainHills = Array.from({ length: 7 }, (_, i) => ({
+        amp: (globalRandom() * landscapeHeight) / (Math.pow(2, i)), // Amplitude decreases for finer details
+        freq: (globalRandom() * 0.01 + 0.005) * (Math.pow(2, i)), // Frequency increases
+        phase: globalRandom() * Math.PI * 2
+    }));
+    
+    // This wave adds subtle shifts in color to the landscape
+    const colorWave = { freq: 0.002, phase: globalRandom() * Math.PI * 2 };
+
+    for (let x = 0; x < canvas.width; x++) {
+        let yOffset = 0;
+        mainHills.forEach(h => yOffset += Math.sin(x * h.freq + h.phase) * h.amp);
+        const hillTopY = startY + yOffset;
+        landscapeHeightMap[x] = hillTopY;
+
+        // Subtle color variation across the terrain
+        const colorOffset = Math.sin(x * colorWave.freq + colorWave.phase) * 10;
+        
+        const gradient = landCtx.createLinearGradient(x, hillTopY, x, canvas.height);
+        gradient.addColorStop(0, `rgb(${100 + colorOffset}, ${140 + colorOffset}, 80)`);
+        gradient.addColorStop(0.5, `rgb(70, 105, 55)`);
+        gradient.addColorStop(1, `rgb(55, 75, 45)`);
+        landCtx.fillStyle = gradient;
+        landCtx.fillRect(x, hillTopY, 1, canvas.height - hillTopY);
+    }
+    
+    // 4. TERRAIN HIGHLIGHT (New Feature for Prettiness)
+    // Draw a bright line along the top edge of the landscape to simulate light.
+    landCtx.beginPath();
+    landCtx.moveTo(0, landscapeHeightMap[0]);
+    for (let x = 1; x < canvas.width; x++) {
+        landCtx.lineTo(x, landscapeHeightMap[x]);
+    }
+    landCtx.strokeStyle = 'rgba(190, 230, 170, 0.7)'; // A bright, slightly transparent green
+    landCtx.lineWidth = 2;
+    landCtx.stroke();
+
+    // 5. TEXTURE (Original, with a subtler effect)
+    const imageData = landCtx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] > 0) { // If pixel is not transparent
+            const noise = (globalRandom() - 0.5) * 20; // Reduced intensity for a finer grain
+            data[i] = Math.max(0, Math.min(255, data[i] + noise));
+            data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
+            data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
+        }
+    }
+    landCtx.putImageData(imageData, 0, 0);
+
+    // 6. GOLF HOLE (Original)
+    const holeX = globalRandom() * (canvas.width - 400) + 200;
+    const holeY = landscapeHeightMap[Math.round(holeX)] + 2;
+    golfHole = { x: holeX, y: holeY, radius: 4 };
+    
+    // Hole shadow/base
+    landCtx.fillStyle = '#1a1a1a';
+    landCtx.beginPath();
+    landCtx.ellipse(holeX, holeY, golfHole.radius, golfHole.radius * 0.5, 0, 0, Math.PI * 2);
+    landCtx.fill();
+
+    // Hole rim/highlight
+    landCtx.strokeStyle = '#cccccc';
+    landCtx.lineWidth = 1;
+    landCtx.beginPath();
+    landCtx.ellipse(holeX, holeY, golfHole.radius + 0.5, golfHole.radius * 0.5 + 0.25, 0, 0, Math.PI * 2);
+    landCtx.stroke();
+
+    // 7. SPARKLES (Original)
+    sparkles = [];
+    for (let i = 0; i < 50; i++) {
+        const x = globalRandom() * canvas.width;
+        const y = landscapeHeightMap[Math.round(x)] + globalRandom() * (canvas.height - landscapeHeightMap[Math.round(x)]);
+        if (isFinite(x) && isFinite(y)) { // Safety check
+            sparkles.push({ x, y, life: globalRandom() * 200, maxLife: 100 + globalRandom() * 100 });
+        }
+    }
+}
 
     const drawLeafMass = (pixels, cx, cy, cz, radius, color, sway, random) => {
         const subCircles = 4 + Math.floor(random() * 5);
