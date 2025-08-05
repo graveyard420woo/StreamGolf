@@ -846,7 +846,7 @@
         }
         if (globalRandom() < 0.00001 && events.length === 0) startEvent('meteor');
         if (globalRandom() < 0.0009 && activeCreatures.size < 11) startEvent('creature');
-        if (globalRandom() < 0.003 && ambientLife.length < 25) startAmbientLife(time);
+        if (globalRandom() < 0.009 && ambientLife.length < 25) startAmbientLife(time);
         
         const renderables = [...activePlants.values(), ...activeCreatures, ...events.filter(e => e.type === 'golfBall' || e.type === 'golfer' || e.type === 'holeInOne')];
         renderables.sort((a, b) => (a.screenY + (a.z || 0)) - (b.screenY + (b.z || 0)));
@@ -2203,62 +2203,63 @@
     }
 //
     function updateAndDrawHoleInOne(e) {
-        if(e.life === 239) {
-			const messageOnHIOID = 1;
-            for(let i=0; i < 50; i++) {
-                const angle = globalRandom() * Math.PI * 2;
-                const speed = globalRandom() * 3 + 1;
-                e.particles.push({
-                    x: e.x, y: e.y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed - 2,
-                    life: 60 + globalRandom() * 30,
-                    color: `hsl(${globalRandom()*360}, 100%, 70%)`
-                });
-            }
-        }
-		
-		if(e.life == 237) {
-			const message = `${e.name}`+' got a Hole in ONE!';
-			if (messageOnHIOID == 1){
-				sendTwitchChatMessage(my_user_id, message);
-				messageOnHIOID = 0;
+		if (e.life === 239) {
+			for (let i = 0; i < 50; i++) {
+				const angle = globalRandom() * Math.PI * 2;
+				const speed = globalRandom() * 3 + 1;
+				e.particles.push({
+					x: e.x, y: e.y,
+					vx: Math.cos(angle) * speed,
+					vy: Math.sin(angle) * speed - 2,
+					life: 60 + globalRandom() * 30,
+					color: `hsl(${globalRandom() * 360}, 100%, 70%)`
+				});
 			}
+			// Initialize a flag to ensure the message is only sent once.
+			e.twitchMessageSent = false;
 		}
-
-        e.particles.forEach(p => {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += 0.05;
-            p.life--;
-            ctx.globalAlpha = p.life / 60;
-            ctx.fillStyle = p.color;
-            ctx.fillRect(p.x, p.y, 2, 2);
-        });
-        e.particles = e.particles.filter(p => p.life > 0);
-        
+	
+		const message = `${e.name} got a Hole in ONE!`;
+	
+		// Check if the life is at the right point AND the message hasn't been sent yet.
+		if (e.life == 237 && !e.twitchMessageSent) {
+			sendTwitchChatMessage(my_user_id, message);
+			// Set the flag to true so this doesn't run again for this event.
+			e.twitchMessageSent = true;
+		}
+	
+		e.particles.forEach(p => {
+			p.x += p.vx;
+			p.y += p.vy;
+			p.vy += 0.05;
+			p.life--;
+			ctx.globalAlpha = p.life / 60;
+			ctx.fillStyle = p.color;
+			ctx.fillRect(p.x, p.y, 2, 2);
+		});
+		e.particles = e.particles.filter(p => p.life > 0);
+	
 		const progress = 1 - (e.life / 240);
-        const scale = Math.sin(progress * Math.PI) * 1.2;
-        const alpha = Math.sin(progress * Math.PI);
-        const message = `${e.name}`+' got a Hole in ONE!';
-        
-        ctx.save();
-        ctx.translate(canvas.width/2, canvas.height/2);
-        ctx.scale(scale, scale);
-        ctx.globalAlpha = alpha;
-        ctx.font = '40px "Silkscreen", sans-serif';
-        ctx.textAlign = 'center';
+		const scale = Math.sin(progress * Math.PI) * 1.2;
+		const alpha = Math.sin(progress * Math.PI);
+	
+		ctx.save();
+		ctx.translate(canvas.width / 2, canvas.height / 2);
+		ctx.scale(scale, scale);
+		ctx.globalAlpha = alpha;
+		ctx.font = '40px "Silkscreen", sans-serif';
+		ctx.textAlign = 'center';
 		ctx.fillStyle = '#231f20';
 		ctx.globalAlpha = alpha * 0.5;
-        ctx.fillText(message, 1, 1);
-        ctx.fillStyle = '#ec008c';
+		ctx.fillText(message, 1, 1);
+		ctx.fillStyle = '#ec008c';
 		ctx.globalAlpha = alpha;
-        ctx.fillText(message, 0, 0);
-        ctx.restore();
+		ctx.fillText(message, 0, 0);
+		ctx.restore();
 		setTimeout(() => {
 			window.location.reload();
 		}, 6000); // A 6 second delay
-    }
+	}
 	
 	function updateAndDrawCreature(creature, time) {
     creature.state_timer--;
