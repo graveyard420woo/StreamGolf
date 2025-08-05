@@ -574,10 +574,10 @@
 					// we break the "sinewave-y" look and create more natural, bumpy terrain.
 					let fractalNoise = 0;
 					let amp = patch.intensity;
-					let freq = 0.05;
+					let freq = 0.25;
 					for(let i = 0; i < 3; i++) {
 						fractalNoise += Math.sin(x * freq) * amp;
-						amp *= 0.4;   // Higher frequency details have less impact
+						amp *= 0.5;   // Higher frequency details have less impact
 						freq *= 2.5;  // Increase frequency for finer details
 					}
 					
