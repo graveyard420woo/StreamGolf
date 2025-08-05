@@ -546,10 +546,10 @@
 		}));
 		
 		// Define 0 or 1 "rough patch" to make them less frequent
-		const numRoughPatches = Math.floor(globalRandom() * 2); 
+		const numRoughPatches = Math.floor(globalRandom() * 4); 
 		const roughPatches = Array.from({ length: numRoughPatches }, () => ({
 			center: globalRandom() * canvas.width,
-			width: globalRandom() * 250 + 150, // The width of the textured area
+			width: globalRandom() * 450 + 80, // The width of the textured area
 			intensity: globalRandom() * 2 + 1, // Reduced intensity for a subtler effect
 		}));
 	
@@ -574,7 +574,7 @@
 					// we break the "sinewave-y" look and create more natural, bumpy terrain.
 					let fractalNoise = 0;
 					let amp = patch.intensity;
-					let freq = 0.25;
+					let freq = 0.09;
 					for(let i = 0; i < 3; i++) {
 						fractalNoise += Math.sin(x * freq) * amp;
 						amp *= 0.5;   // Higher frequency details have less impact
