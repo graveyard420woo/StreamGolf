@@ -639,7 +639,7 @@
 	
 		// 7. SPARKLES (Original)
 		sparkles = [];
-		for (let i = 0; i < 50; i++) {
+		for (let i = 0; i < 250; i++) {
 			const x = globalRandom() * canvas.width;
 			const y = landscapeHeightMap[Math.round(x)] + globalRandom() * (canvas.height - landscapeHeightMap[Math.round(x)]);
 			if (isFinite(x) && isFinite(y)) {
