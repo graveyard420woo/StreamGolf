@@ -578,7 +578,7 @@
 					for(let i = 0; i < 3; i++) {
 						fractalNoise += Math.sin(x * freq) * amp;
 						amp *= 0.5;   // Higher frequency details have less impact
-						freq *= 2.5;  // Increase frequency for finer details
+						freq *= 1.5;  // Increase frequency for finer details
 					}
 					
 					roughnessOffset += fractalNoise * influence;
