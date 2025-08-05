@@ -2070,8 +2070,12 @@
         let frame = 'idle';
         if(golfer.stage === 'swinging') frame = 'swing';
         
+        // --- Skin Tone Array & Randomizer ---
+        const skinTones = ["#8d5524", "#c68642", "#e0ac69", "#f1c27d", "#ffdbac"];
+        const randomSkinTone = skinTones[Math.floor(Math.random() * skinTones.length)];
+        
         ctx.fillStyle = golfer.shirtColor; ctx.fillRect(-3 * scale, -25 * scale, 8 * scale, 12 * scale);
-        ctx.fillStyle = '#ffdbac'; ctx.fillRect(-2 * scale, -31 * scale, 6 * scale, 6 * scale);
+        ctx.fillStyle = randomSkinTone; ctx.fillRect(-2 * scale, -31 * scale, 6 * scale, 6 * scale);
         ctx.fillStyle = '#555'; ctx.fillRect(-3 * scale, -13 * scale, 4 * scale, 13 * scale); ctx.fillRect(2 * scale, -13 * scale, 4 * scale, 13 * scale);
         
         ctx.save();
@@ -2080,7 +2084,7 @@
             const swingProgress = Math.sin((golfer.animation_timer / 40) * Math.PI);
             ctx.rotate(swingProgress * 2 - 1);
         }
-        ctx.fillStyle = '#ffdbac'; ctx.fillRect(0, 0, 2 * scale, 8 * scale);
+        ctx.fillStyle = randomSkinTone; ctx.fillRect(0, 0, 2 * scale, 8 * scale);
         ctx.fillStyle = '#aaa'; ctx.fillRect(0, 8 * scale, 2 * scale, 18 * scale);
         ctx.fillStyle = '#888'; ctx.fillRect(-2 * scale, 26 * scale, 6 * scale, 3 * scale);
         ctx.restore();
