@@ -10,23 +10,25 @@ https://graveyard420woo.github.io/StreamGolf/
 
 Commands:
 
-  !golf - your golfer takes ten shots
+  any chat message - the chatter's golfer takes one shot.
+
+  !golf - your golfer takes ten shots.
 
   !tree or !plant - grows a tree, sunflower or cactus for the chatter. (one plant per chatter)
 
   !flag - shows a little flag where the hole is. (cause sometimes is hard to see)
 
-  !meteor - spawns a random meteor
+  !meteor - spawns a random meteor.
 
-  !meteorshower - spawns a bunch of random meteors
+  !meteorshower - spawns a bunch of random meteors.
 
-  !lightning - spawns a random lightning strike
+  !lightning - spawns a random lightning strike.
 
-  !lightningstorm - spawns a bunch of random lightning strikes
+  !lightningstorm - spawns a bunch of random lightning strikes.
 
-  !wildfire - spawns a random wildfire
+  !wildfire - spawns a random wildfire.
 
-  !forestfire - spawns a bunch of random wildfires
+  !forestfire - spawns a bunch of random wildfires.
 
   !shawn
   !winter
