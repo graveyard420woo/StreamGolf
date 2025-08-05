@@ -1102,7 +1102,6 @@
             weather.fade--;
             if (weather.fade <= 0) {
                 weather.type = 'none';
-                if (rainCount > 1) erodeLandscape();
                 return;
             }
         } else {
@@ -2201,7 +2200,7 @@
             ball.life = 0; // Despawn if stopped
         }
     }
-//
+	
     function updateAndDrawHoleInOne(e) {
 		if (e.life === 239) {
 			for (let i = 0; i < 50; i++) {
@@ -2275,7 +2274,7 @@
     if (creature.state === 'roaming' || creature.state === 'leaving') {
         creature.x += creature.speed;
 
-        // --- SMOOTH Y-POSITION LOGIC (Keep this as is) ---
+        // --- SMOOTH Y-POSITION LOGIC ---
         const x1 = Math.floor(creature.x);
         const x2 = x1 + 1;
         
@@ -2289,7 +2288,6 @@
         } else {
             creature.screenY = canvas.height * 2;
         }
-        // ---
 
         if ((creature.state_timer <= 0 || Math.abs(creature.x - creature.targetX) < 5) && creature.state !== 'leaving') {
             creature.state = 'idle';
@@ -2767,10 +2765,6 @@
                 ctx.restore();
             }
         });
-    }
-
-    function erodeLandscape() {
-        
     }
 
     function updatePlantListUI() {
