@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stream Golf by graveyard v1.1</title>
+    <title>Stream Golf by graveyard v1.2</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -55,7 +55,7 @@
     </div>
     <canvas id="arboretum-canvas"></canvas>
 
-    <!-- ## NEW TEST BUTTON ## -->
+    <!-- ## TEST BUTTON ## -->
     <button id="hole-in-one-test-btn">Test Hole-In-One</button>
 
     <div id="plant-list-container">
@@ -492,13 +492,16 @@
     const lightningBtn = document.getElementById('lightning-btn');
     const fireBtn = document.getElementById('fire-btn');
     const golfBtn = document.getElementById('golf-btn');
-    // ## NEW ##
     const testHoleInOneBtn = document.getElementById('hole-in-one-test-btn');
 
     const activePlants = new Map();
     const activeCreatures = new Set();
     const labelRects = new Map();
     let landscapeCanvas, landscapeHeightMap, landCtx, golfHole;
+    // ## NEW: Variables for landscape animation ##
+    let previousLandscapeCanvas = null;
+    let landscapeAnimation = { isAnimating: false, startTime: 0, duration: 2500, sourceHeightMap: [], targetHeightMap: [] };
+
     let weather = { type: 'none', particles: [], life: 0, fade: 0, intensity: 0 };
     let events = [];
     let ambientLife = [];
@@ -838,13 +841,6 @@
         globalRandom = createSeededRandom(seed);
         setupCanvas();
         generateLandscape();
-        //plantListDiv.addEventListener('click', onRemoveClick);
-        //generateBtn.addEventListener('click', addPlant);
-        //meteorBtn.addEventListener('click', () => startEvent('meteor'));
-        //lightningBtn.addEventListener('click', () => startEvent('lightning'));
-        //fireBtn.addEventListener('click', () => startEvent('forestFire'));
-        //golfBtn.addEventListener('click', () => startEvent('golf', 'golfers Name'));
-        // ## NEW ##
         testHoleInOneBtn.addEventListener('click', resetLandscapeAndAnimateElements);
         updatePlantListUI();
         animate(0);
@@ -887,8 +883,8 @@
                 return; 
             }
         }
-        const name = thechattername; //nameInput.value || 'My Plant';
-        const hex = thehexvalue; //colorPicker.value;
+        const name = thechattername;
+        const hex = thehexvalue;
         const plantSeed = createSeed(name + hex + globalRandom());
         const plantRandom = createSeededRandom(plantSeed);
 
@@ -920,18 +916,58 @@
     }
 
     function animate(time) {
-        // Use performance.now() for smoother animations, but keep `time` for periodic events
         const now = performance.now();
-
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-		
 		updateTimeAndLighting(time);
 
-        if (landscapeCanvas) ctx.drawImage(landscapeCanvas, 0, 0);
+        // ## MODIFIED: Handle landscape drawing and animation ##
+        if (landscapeAnimation.isAnimating) {
+            const elapsed = now - landscapeAnimation.startTime;
+            const progress = Math.min(elapsed / landscapeAnimation.duration, 1);
+            const easedProgress = easeInOutCubic(progress);
+
+            // Draw the old landscape first
+            if (previousLandscapeCanvas) {
+                ctx.drawImage(previousLandscapeCanvas, 0, 0);
+            }
+
+            // Create an interpolated height map for the clipping path
+            const interpolatedHeightMap = new Array(canvas.width);
+            for (let x = 0; x < canvas.width; x++) {
+                const startY = landscapeAnimation.sourceHeightMap[x] || canvas.height;
+                const endY = landscapeAnimation.targetHeightMap[x] || canvas.height;
+                interpolatedHeightMap[x] = startY + (endY - startY) * easedProgress;
+            }
+
+            // Create a clipping path and draw the new landscape inside it
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(0, interpolatedHeightMap[0]);
+            for (let x = 1; x < canvas.width; x++) {
+                ctx.lineTo(x, interpolatedHeightMap[x]);
+            }
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            ctx.clip();
+            
+            if (landscapeCanvas) {
+                ctx.drawImage(landscapeCanvas, 0, 0);
+            }
+            
+            ctx.restore();
+
+            if (progress >= 1) {
+                landscapeAnimation.isAnimating = false;
+                previousLandscapeCanvas = null; // Clear the old canvas reference
+            }
+        } else {
+            // Default behavior when not animating
+            if (landscapeCanvas) ctx.drawImage(landscapeCanvas, 0, 0);
+        }
 
         updateAndDrawSparkles();
         updateAndDrawPuddles();
-		
 		updateAndDrawGolfFlag(now);
 
         if (globalRandom() < 0.00005 && weather.type === 'none') {
@@ -947,22 +983,16 @@
         renderables.sort((a, b) => (a.screenY + (a.z || 0)) - (b.screenY + (b.z || 0)));
 
         for (const item of renderables) {
-             // ## NEW: ANIMATION LOGIC BLOCK ##
             if (item.isAnimating && item.animation) {
                 const elapsed = now - item.animation.startTime;
                 const progress = Math.min(elapsed / item.animation.duration, 1);
                 const easedProgress = easeInOutCubic(progress);
-
-                // Interpolate the screenY position
                 item.screenY = item.animation.startY + (item.animation.targetY - item.animation.startY) * easedProgress;
-                
-                // If the animation is complete, clean up
                 if (progress >= 1) {
                     item.isAnimating = false;
                     item.animation = null;
                 }
             }
-
 
             ctx.save();
             if(item.type === 'creature') {
@@ -1020,7 +1050,7 @@
 
                 if (plant.snowAccumulation > 0 && plant.spriteCanvas) {
                     ctx.save();
-                    ctx.globalAlpha = plant.snowAccumulation * 0.8;
+                    ctx.globalAlpha = plant.snowAccumulation * 0.5;
                     ctx.fillStyle = 'white';
                     ctx.shadowColor = 'white';
                     ctx.shadowBlur = 25;
@@ -1032,7 +1062,6 @@
                 if (plant.status === 'burning') {
                     for(let i = 0; i < 30; i++){
                         ctx.fillStyle = `rgba(255, ${100 + globalRandom() * 100}, 0, ${globalRandom() * 0.5 + 0.3})`;
-
                         ctx.beginPath();
                         ctx.arc(plant.screenX + swayOffset + (globalRandom() - 0.5) * 25, plant.screenY - (plant.spriteCanvas ? plant.spriteCanvas.height/2 : 20) + (globalRandom() - 0.5) * 40, globalRandom() * 15, 0, Math.PI*2);
                         ctx.fill();
@@ -1059,47 +1088,49 @@
     
     // ## ALL OTHER FUNCTIONS ##
     
-    // ## NEW: Easing function for smooth animation ##
     function easeInOutCubic(t) {
         return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     }
 
-    // ## NEW: Landscape reset and element animation function ##
+    // ## MODIFIED: This function now sets up the animation for the landscape as well. ##
     function resetLandscapeAndAnimateElements() {
-        console.log("Hole in one! Resetting landscape and animating elements.");
-
-        const animationDuration = 2500; // 2.5 seconds for the animation
+        console.log("Resetting landscape and animating elements.");
         const now = performance.now();
 
-        // 1. Tag all existing elements that need to move for animation
+        // --- Setup for Landscape Animation ---
+        landscapeAnimation.isAnimating = true;
+        landscapeAnimation.startTime = now;
+        landscapeAnimation.sourceHeightMap = [...landscapeHeightMap]; // Store old height map
+        previousLandscapeCanvas = landscapeCanvas; // Store old canvas image
+
+        // --- Setup for Object Animation ---
         const elementsToAnimate = [...activePlants.values(), ...activeCreatures];
         for (const item of elementsToAnimate) {
             item.animation = {
                 startTime: now,
-                duration: animationDuration,
+                duration: landscapeAnimation.duration,
                 startY: item.screenY,
-                targetY: 0 // Will be calculated after landscape generation
+                targetY: 0
             };
             item.isAnimating = true;
         }
 
-        // 2. Regenerate the landscape, which creates a new landscapeHeightMap
+        // --- Generate New Landscape ---
         generateLandscape();
 
-        // 3. Calculate the new target Y position for all tagged elements
+        // --- Calculate Targets for Animation ---
+        landscapeAnimation.targetHeightMap = [...landscapeHeightMap]; // Store new height map
+
         for (const item of elementsToAnimate) {
             const xPos = item.screenX !== undefined ? item.screenX : item.x;
             const roundedX = Math.round(xPos);
 
             if (roundedX >= 0 && roundedX < canvas.width && landscapeHeightMap[roundedX]) {
-                // The new Y position is directly on the new heightmap at the element's current X.
                 item.animation.targetY = landscapeHeightMap[roundedX];
             } else {
-                // If element is off-screen, just keep its current Y to avoid strange jumps
                 item.animation.targetY = item.screenY;
             }
         }
-        // The main animate() loop will now handle moving the elements smoothly to their targetY.
     }
 
 
@@ -2154,8 +2185,6 @@
     function updateAndDrawGolfer(golfer) {
 		const scale = 1.8;
 		
-        // Update the golfer's ground position
-        // ## MODIFIED: This is now handled by the main animation loop when an animation is active.
         if (!golfer.isAnimating) {
             golfer.screenY = landscapeHeightMap[Math.round(golfer.x)] || golfer.screenY;
         }
@@ -2384,7 +2413,6 @@
 			e.twitchMessageSent = true;
 		}
 
-        // ## MODIFIED: Trigger the landscape reset at the peak of the text animation
         if (e.life === 120) {
             resetLandscapeAndAnimateElements();
         }
@@ -2417,11 +2445,6 @@
 		ctx.globalAlpha = alpha;
 		ctx.fillText(message, 0, 0);
 		ctx.restore();
-		
-        // ## REMOVED: The page reload timeout is no longer needed ##
-		// setTimeout(() => {
-		// 	window.location.reload();
-		// }, 6000); 
 	}
 	
 	function updateAndDrawCreature(creature, time) {
@@ -2438,7 +2461,6 @@
     if (creature.state === 'roaming' || creature.state === 'leaving') {
         creature.x += creature.speed;
 
-        // ## MODIFIED: This logic is skipped if the element is being animated by the reset function ##
         if (!creature.isAnimating) {
             const x1 = Math.floor(creature.x);
             const x2 = x1 + 1;
