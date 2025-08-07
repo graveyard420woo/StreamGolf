@@ -20,6 +20,8 @@ Commands:
 
   !flag - shows a little flag where the hole is. (cause sometimes is hard to see)
 
+  !hios or !holeouts - shows a list of all the aces so far
+
   !meteor - spawns a random meteor.
 
   !meteorshower - spawns a bunch of random meteors.
@@ -38,8 +40,9 @@ Commands:
   !miyong
   !nbh
   !tennis
+  !cara
   !rabbits
 
-Project researchers & devs: S2Shot, ShadowMario98, Gizar0, Spenny__420, Sandals, graveyard420woo
+Project researchers & devs: S2Shot, ShadowMario98, Gizar0, Spenny__420, Sandals, CaraMinneee, TheMayorAdam, LadyMiYong, Tangel0, morjanga, SuzanneToad, graveyard420woo
 
 
