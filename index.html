@@ -2466,6 +2466,7 @@
             holeInOneScores.set(e.name, currentScore + 1);
 			resetLandscapeAndAnimateElements();
 			sendTwitchChatMessage(my_user_id, message);
+			setTimeout(() => {showLeaderboard();}, 1300 * i); 
 			e.twitchMessageSent = true;
 		}
 	
