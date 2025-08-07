@@ -1393,7 +1393,8 @@
                 state_timer: 200 + globalRandom() * 200,
                 animation_timer: 0,
             };
-			
+			newCreature.targetY = landscapeHeightMap[Math.round(newCreature.targetX)] || newCreature.y;
+            activeCreatures.add(newCreature);
 		} else if (type === 'tophatrabbit') {
             const startSide = globalRandom() < 0.5 ? -40 : canvas.width + 40;
             const creatureTypes = [
@@ -1413,10 +1414,11 @@
                 speed: (startSide < 0 ? 1 : -1) * (0.3 + globalRandom() * 0.4),
                 life: 3000 + globalRandom() * 2000,
                 state: 'roaming',
-                state_timer: 200 + globalRandom() * 200,
+                state_timer: 2000 + globalRandom() * 200,
                 animation_timer: 0,
             };
-
+			newCreature.targetY = landscapeHeightMap[Math.round(newCreature.targetX)] || newCreature.y;
+            activeCreatures.add(newCreature);
         } else if (type === 'tennisbear') {
             const startSide = globalRandom() < 0.5 ? -40 : canvas.width + 40;
             const creatureTypes = [
