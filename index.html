@@ -73,6 +73,11 @@
         <button id="golf-btn">Golf</button>
     </div>
     
+    <div id="hole-in-one-leaderboard">
+        <h3>Hole-in-One Club</h3>
+        <div id="leaderboard-list"></div>
+    </div>
+    
     <script type="text/javascript" src="eventsub.js"></script>
     <script type="text/javascript">
 
@@ -89,6 +94,7 @@
 	    let golfFlagVisibleUntil = 0; 
     	const FLAG_ANIMATE_DURATION = 560; 
 	    const FLAG_VISIBLE_DURATION = 5000; 
+		const holeInOneScores = new Map();
 		
 		const myBigAssDiv = document.getElementById('bigcontainer1');
 		  setTimeout(() => {
@@ -839,6 +845,7 @@
         generateLandscape();
         updatePlantListUI();
         animate(0);
+		setInterval(showLeaderboard, 600000); // Show every 10 minutes
     }
 
     function findNewPlantPosition(plantName) {
@@ -2414,6 +2421,8 @@
 					color: `hsl(${globalRandom() * 360}, 100%, 70%)`
 				});
 			}
+			const currentScore = holeInOneScores.get(e.name) || 0;
+            holeInOneScores.set(e.name, currentScore + 1);
 			e.twitchMessageSent = false;
 		}
 	
@@ -2988,6 +2997,39 @@
                 item.style.opacity = 0.5;
             }
             plantListDiv.appendChild(item);
+        }
+    }
+	
+	function updateLeaderboardUI() {
+        const listContainer = document.getElementById('leaderboard-list');
+        listContainer.innerHTML = '';
+
+        if (holeInOneScores.size === 0) {
+            listContainer.innerHTML = '<div>No aces yet!</div>';
+            return;
+        }
+
+        // Sort scores in descending order
+        const sortedScores = [...holeInOneScores.entries()].sort((a, b) => b[1] - a[1]);
+
+        for (const [name, score] of sortedScores) {
+            const entry = document.createElement('div');
+            entry.className = 'leaderboard-entry';
+            entry.innerHTML = `<span class="leaderboard-name">${name}</span><span class="leaderboard-score">${score}</span>`;
+            listContainer.appendChild(entry);
+        }
+    }
+
+    function showLeaderboard() {
+        const leaderboard = document.getElementById('hole-in-one-leaderboard');
+        if(holeInOneScores.size > 0) { // Only show if there are scores
+            updateLeaderboardUI();
+            leaderboard.classList.add('visible');
+
+            // Set a timeout to hide it after 8 seconds
+            setTimeout(() => {
+                leaderboard.classList.remove('visible');
+            }, 8000); // 8 seconds
         }
     }
 	
