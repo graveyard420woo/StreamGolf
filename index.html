@@ -245,6 +245,15 @@
 							  }, 300 * i); 
 							 }
 							}
+							if(`${message.text}` == '!cara'){
+								startEvent('golf', 'cara');
+								startEvent('golf', 'cara');
+							for (let i = 0; i < 130; i++) {
+							  setTimeout(() => {
+								startEvent('rabbit7');
+							  }, 300 * i); 
+							 }
+							}
 							if(`${message.text}` == '!rabbits'){
 							for (let i = 0; i < 40; i++) {
 							  setTimeout(() => {
@@ -847,7 +856,7 @@
         generateLandscape();
         updatePlantListUI();
         animate(0);
-		setInterval(showLeaderboard, 600000); // Show every 10 minutes
+		setInterval(showLeaderboard, 1800000); // Show every 30 minutes
     }
 
     function findNewPlantPosition(plantName) {
@@ -3027,17 +3036,13 @@
         if(holeInOneScores.size > 0) { // Only show if there are scores
             updateLeaderboardUI();
             leaderboard.classList.add('visible');
-
-            // Set a timeout to hide it after 8 seconds
             setTimeout(() => {
                 leaderboard.classList.remove('visible');
-            }, 11000); // 8 seconds
+            }, 11000); 
         }
 		if(forceShow == 1) { // Only show if there are scores
             updateLeaderboardUI();
             leaderboard.classList.add('visible');
-
-            // Set a timeout to hide it after 8 seconds
             setTimeout(() => {
                 leaderboard.classList.remove('visible');
             }, 11000); // 8 seconds
