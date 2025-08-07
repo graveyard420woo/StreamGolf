@@ -250,7 +250,7 @@
 								startEvent('golf', 'cara');
 							for (let i = 0; i < 130; i++) {
 							  setTimeout(() => {
-								startEvent('rabbit7');
+								startEvent('tophatrabbit');
 							  }, 300 * i); 
 							 }
 							}
@@ -1393,8 +1393,30 @@
                 state_timer: 200 + globalRandom() * 200,
                 animation_timer: 0,
             };
-            newCreature.targetY = landscapeHeightMap[Math.round(newCreature.targetX)] || newCreature.y;
-            activeCreatures.add(newCreature);
+			
+		} else if (type === 'tophatrabbit') {
+            const startSide = globalRandom() < 0.5 ? -40 : canvas.width + 40;
+            const creatureTypes = [
+				'rabbit7', 'rabbit7'
+			];
+            const creatureType = creatureTypes[Math.floor(globalRandom() * creatureTypes.length)];
+            
+            const newCreature = {
+                id: Date.now(),
+                type: 'creature',
+                creatureType: creatureType,
+                x: startSide,
+                y: landscapeHeightMap[Math.round(startSide)] || (canvas.height - canvas.height / 4),
+                screenY: 0,
+                targetX: globalRandom() * (canvas.width - 200) + 100,
+                targetY: 0,
+                speed: (startSide < 0 ? 1 : -1) * (0.3 + globalRandom() * 0.4),
+                life: 3000 + globalRandom() * 2000,
+                state: 'roaming',
+                state_timer: 200 + globalRandom() * 200,
+                animation_timer: 0,
+            };
+
         } else if (type === 'tennisbear') {
             const startSide = globalRandom() < 0.5 ? -40 : canvas.width + 40;
             const creatureTypes = [
