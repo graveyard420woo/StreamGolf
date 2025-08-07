@@ -2426,21 +2426,27 @@
 			sendTwitchChatMessage(my_user_id, message);
 			e.twitchMessageSent = true;
 		}
-
-        if (e.life === 120) {
-            resetLandscapeAndAnimateElements();
-        }
+	
+		if (e.life === 120) {
+			resetLandscapeAndAnimateElements();
+		}
+	
+		// --- Start of Change 1 ---
+		ctx.save(); // Save the current state before drawing particles
 	
 		e.particles.forEach(p => {
 			p.x += p.vx;
 			p.y += p.vy;
 			p.vy += 0.05;
 			p.life--;
-			ctx.globalAlpha = p.life / 60;
+			ctx.globalAlpha = p.life / 60; // This will now only affect the particle
 			ctx.fillStyle = p.color;
 			ctx.fillRect(p.x, p.y, 2, 2);
 		});
 		e.particles = e.particles.filter(p => p.life > 0);
+	
+		ctx.restore(); // Restore the state, resetting globalAlpha
+		// --- End of Change 1 ---
 	
 		const progress = 1 - (e.life / 240);
 		const scale = Math.sin(progress * Math.PI) * 1.2;
@@ -2452,12 +2458,17 @@
 		ctx.globalAlpha = alpha;
 		ctx.font = '40px "Silkscreen", sans-serif';
 		ctx.textAlign = 'center';
+	
+		// Draw the text shadow
 		ctx.fillStyle = '#231f20';
 		ctx.globalAlpha = alpha * 0.5;
 		ctx.fillText(message, 1, 1);
+	
+		// Draw the main text
 		ctx.fillStyle = '#ec008c';
 		ctx.globalAlpha = alpha;
 		ctx.fillText(message, 0, 0);
+		
 		ctx.restore();
 	}
 	
