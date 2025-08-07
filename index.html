@@ -2431,45 +2431,44 @@
 			resetLandscapeAndAnimateElements();
 		}
 	
-		// --- Start of Change 1 ---
-		ctx.save(); // Save the current state before drawing particles
-	
+		// This part for the particles is fine, as it's correctly saved and restored.
+		ctx.save();
 		e.particles.forEach(p => {
 			p.x += p.vx;
 			p.y += p.vy;
 			p.vy += 0.05;
 			p.life--;
-			ctx.globalAlpha = p.life / 60; // This will now only affect the particle
+			ctx.globalAlpha = p.life / 60;
 			ctx.fillStyle = p.color;
 			ctx.fillRect(p.x, p.y, 2, 2);
 		});
+		ctx.restore();
 		e.particles = e.particles.filter(p => p.life > 0);
 	
-		ctx.restore(); // Restore the state, resetting globalAlpha
-		// --- End of Change 1 ---
-	
+		// --- Start of Change ---
+		// Calculate animation progress and final alpha for the text
 		const progress = 1 - (e.life / 240);
 		const scale = Math.sin(progress * Math.PI) * 1.2;
 		const alpha = Math.sin(progress * Math.PI);
 	
-		ctx.save();
+		ctx.save(); // Save context state (for transformations)
 		ctx.translate(canvas.width / 2, canvas.height / 2);
 		ctx.scale(scale, scale);
-		ctx.globalAlpha = alpha;
 		ctx.font = '40px "Silkscreen", sans-serif';
 		ctx.textAlign = 'center';
 	
-		// Draw the text shadow
-		ctx.fillStyle = '#231f20';
-		ctx.globalAlpha = alpha * 0.5;
+		// By using RGBA, we apply opacity to the color, not the global context.
+		// This is much safer and won't affect other drawing operations.
+		// Shadow Text Color: '#231f20' is rgb(35, 31, 32)
+		ctx.fillStyle = `rgba(35, 31, 32, ${alpha * 0.5})`;
 		ctx.fillText(message, 1, 1);
 	
-		// Draw the main text
-		ctx.fillStyle = '#ec008c';
-		ctx.globalAlpha = alpha;
+		// Main Text Color: '#ec008c' is rgb(236, 0, 140)
+		ctx.fillStyle = `rgba(236, 0, 140, ${alpha})`;
 		ctx.fillText(message, 0, 0);
-		
-		ctx.restore();
+	
+		ctx.restore(); // Restore context state (transformations)
+		// --- End of Change ---
 	}
 	
 	function updateAndDrawCreature(creature, time) {
