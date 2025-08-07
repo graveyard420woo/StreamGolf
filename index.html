@@ -926,7 +926,7 @@
             const progress = Math.min(elapsed / landscapeAnimation.duration, 1);
             const easedProgress = easeInOutCubic(progress);
 
-            // Create a temporary height map for the current frame
+            // Create the interpolated height map for the current animation frame
             const interpolatedHeightMap = new Array(canvas.width);
             for (let x = 0; x < canvas.width; x++) {
                 const startY = landscapeAnimation.sourceHeightMap[x] || canvas.height;
@@ -934,9 +934,10 @@
                 interpolatedHeightMap[x] = startY + (endY - startY) * easedProgress;
             }
 
-            // --- 1. Draw the OLD landscape, morphing its shape and fading OUT ---
+            // --- 1. Draw the OLD landscape, morphing its shape at FULL OPACITY ---
             if (previousLandscapeCanvas) {
-                ctx.globalAlpha = 1 - easedProgress; // Fade out
+                // The old landscape is always drawn at 100% opacity, acting as the solid base.
+                ctx.globalAlpha = 1; 
                 for (let x = 0; x < canvas.width; x++) {
                     const sourceY = landscapeAnimation.sourceHeightMap[x] || canvas.height;
                     const sourceHeight = previousLandscapeCanvas.height - sourceY;
@@ -944,7 +945,6 @@
                     const destHeight = canvas.height - destY;
 
                     if (sourceHeight > 0 && destHeight > 0) {
-                        // This draws a 1px slice from the old canvas, stretching it to the new position
                         ctx.drawImage(previousLandscapeCanvas, x, sourceY, 1, sourceHeight, x, destY, 1, destHeight);
                     }
                 }
@@ -952,7 +952,7 @@
 
             // --- 2. Draw the NEW landscape on top, morphing its shape and fading IN ---
             if (landscapeCanvas) {
-                ctx.globalAlpha = easedProgress; // Fade in
+                ctx.globalAlpha = easedProgress; // Fades in from 0 to 1
                 for (let x = 0; x < canvas.width; x++) {
                     const sourceY = landscapeAnimation.targetHeightMap[x] || canvas.height;
                     const sourceHeight = landscapeCanvas.height - sourceY;
@@ -960,16 +960,15 @@
                     const destHeight = canvas.height - destY;
 
                     if (sourceHeight > 0 && destHeight > 0) {
-                        // This draws a 1px slice from the new canvas, stretching it to the new position
                         ctx.drawImage(landscapeCanvas, x, sourceY, 1, sourceHeight, x, destY, 1, destHeight);
                     }
                 }
             }
 
-            // Reset alpha for all other elements
+            // Reset alpha for all subsequent drawing operations
             ctx.globalAlpha = 1;
 
-            // Check if the animation is finished
+            // Check if the animation is complete
             if (progress >= 1) {
                 landscapeAnimation.isAnimating = false;
                 previousLandscapeCanvas = null;
