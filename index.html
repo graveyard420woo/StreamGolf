@@ -175,8 +175,8 @@
 							if(`${message.text}` == '!meteor'){startEvent('meteor')}
 							if(`${message.text}` == '!lightning'){startEvent('lightning')}
 							if(`${message.text}` == '!wildfire'){startEvent('forestFire')}
-							if(`${message.text}` == '!hios'){showLeaderboard();}
-							if(`${message.text}` == '!holeouts'){showLeaderboard();}
+							if(`${message.text}` == '!hios'){showLeaderboard(1)}
+							if(`${message.text}` == '!holeouts'){showLeaderboard(1)}
 							if(`${message.text}` == '!meteorshower'){
 							for (let i = 0; i < 11; i++) {
 							  setTimeout(() => {
@@ -3022,9 +3022,18 @@
         }
     }
 
-    function showLeaderboard() {
+    function showLeaderboard(forceShow) {
         const leaderboard = document.getElementById('hole-in-one-leaderboard');
         if(holeInOneScores.size > 0) { // Only show if there are scores
+            updateLeaderboardUI();
+            leaderboard.classList.add('visible');
+
+            // Set a timeout to hide it after 8 seconds
+            setTimeout(() => {
+                leaderboard.classList.remove('visible');
+            }, 11000); // 8 seconds
+        }
+		if(forceShow == 1) { // Only show if there are scores
             updateLeaderboardUI();
             leaderboard.classList.add('visible');
 
