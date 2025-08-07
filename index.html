@@ -2432,18 +2432,7 @@
 		}
 	
 		// This part for the particles is fine, as it's correctly saved and restored.
-		ctx.save();
-		e.particles.forEach(p => {
-			p.x += p.vx;
-			p.y += p.vy;
-			p.vy += 0.05;
-			p.life--;
-			ctx.globalAlpha = p.life / 60;
-			ctx.fillStyle = p.color;
-			ctx.fillRect(p.x, p.y, 2, 2);
-		});
-		ctx.restore();
-		e.particles = e.particles.filter(p => p.life > 0);
+		
 	
 		// --- Start of Change ---
 		// Calculate animation progress and final alpha for the text
