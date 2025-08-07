@@ -10,6 +10,23 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tiny5&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400&display=swap" rel="stylesheet">
+    <!-- ## NEW STYLE FOR TEST BUTTON ## -->
+    <style>
+        #hole-in-one-test-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 9999;
+            padding: 8px 12px;
+            background-color: #ec008c;
+            color: white;
+            border: 2px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Silkscreen', sans-serif;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+        }
+    </style>
 </head>
 <body>
 
@@ -37,6 +54,9 @@
 </div>
     </div>
     <canvas id="arboretum-canvas"></canvas>
+
+    <!-- ## NEW TEST BUTTON ## -->
+    <button id="hole-in-one-test-btn">Test Hole-In-One</button>
 
     <div id="plant-list-container">
         <h3>Arboretum</h3>
@@ -472,6 +492,8 @@
     const lightningBtn = document.getElementById('lightning-btn');
     const fireBtn = document.getElementById('fire-btn');
     const golfBtn = document.getElementById('golf-btn');
+    // ## NEW ##
+    const testHoleInOneBtn = document.getElementById('hole-in-one-test-btn');
 
     const activePlants = new Map();
     const activeCreatures = new Set();
@@ -822,6 +844,8 @@
         //lightningBtn.addEventListener('click', () => startEvent('lightning'));
         //fireBtn.addEventListener('click', () => startEvent('forestFire'));
         //golfBtn.addEventListener('click', () => startEvent('golf', 'golfers Name'));
+        // ## NEW ##
+        testHoleInOneBtn.addEventListener('click', resetLandscapeAndAnimateElements);
         updatePlantListUI();
         animate(0);
     }
@@ -896,6 +920,9 @@
     }
 
     function animate(time) {
+        // Use performance.now() for smoother animations, but keep `time` for periodic events
+        const now = performance.now();
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 		
 		updateTimeAndLighting(time);
@@ -905,7 +932,7 @@
         updateAndDrawSparkles();
         updateAndDrawPuddles();
 		
-		updateAndDrawGolfFlag(time);
+		updateAndDrawGolfFlag(now);
 
         if (globalRandom() < 0.00005 && weather.type === 'none') {
             const weatherOptions = ['rain', 'snow', 'windy'];
@@ -920,6 +947,23 @@
         renderables.sort((a, b) => (a.screenY + (a.z || 0)) - (b.screenY + (b.z || 0)));
 
         for (const item of renderables) {
+             // ## NEW: ANIMATION LOGIC BLOCK ##
+            if (item.isAnimating && item.animation) {
+                const elapsed = now - item.animation.startTime;
+                const progress = Math.min(elapsed / item.animation.duration, 1);
+                const easedProgress = easeInOutCubic(progress);
+
+                // Interpolate the screenY position
+                item.screenY = item.animation.startY + (item.animation.targetY - item.animation.startY) * easedProgress;
+                
+                // If the animation is complete, clean up
+                if (progress >= 1) {
+                    item.isAnimating = false;
+                    item.animation = null;
+                }
+            }
+
+
             ctx.save();
             if(item.type === 'creature') {
                 updateAndDrawCreature(item, time);
@@ -988,6 +1032,7 @@
                 if (plant.status === 'burning') {
                     for(let i = 0; i < 30; i++){
                         ctx.fillStyle = `rgba(255, ${100 + globalRandom() * 100}, 0, ${globalRandom() * 0.5 + 0.3})`;
+
                         ctx.beginPath();
                         ctx.arc(plant.screenX + swayOffset + (globalRandom() - 0.5) * 25, plant.screenY - (plant.spriteCanvas ? plant.spriteCanvas.height/2 : 20) + (globalRandom() - 0.5) * 40, globalRandom() * 15, 0, Math.PI*2);
                         ctx.fill();
@@ -1013,6 +1058,50 @@
     }
     
     // ## ALL OTHER FUNCTIONS ##
+    
+    // ## NEW: Easing function for smooth animation ##
+    function easeInOutCubic(t) {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    // ## NEW: Landscape reset and element animation function ##
+    function resetLandscapeAndAnimateElements() {
+        console.log("Hole in one! Resetting landscape and animating elements.");
+
+        const animationDuration = 2500; // 2.5 seconds for the animation
+        const now = performance.now();
+
+        // 1. Tag all existing elements that need to move for animation
+        const elementsToAnimate = [...activePlants.values(), ...activeCreatures];
+        for (const item of elementsToAnimate) {
+            item.animation = {
+                startTime: now,
+                duration: animationDuration,
+                startY: item.screenY,
+                targetY: 0 // Will be calculated after landscape generation
+            };
+            item.isAnimating = true;
+        }
+
+        // 2. Regenerate the landscape, which creates a new landscapeHeightMap
+        generateLandscape();
+
+        // 3. Calculate the new target Y position for all tagged elements
+        for (const item of elementsToAnimate) {
+            const xPos = item.screenX !== undefined ? item.screenX : item.x;
+            const roundedX = Math.round(xPos);
+
+            if (roundedX >= 0 && roundedX < canvas.width && landscapeHeightMap[roundedX]) {
+                // The new Y position is directly on the new heightmap at the element's current X.
+                item.animation.targetY = landscapeHeightMap[roundedX];
+            } else {
+                // If element is off-screen, just keep its current Y to avoid strange jumps
+                item.animation.targetY = item.screenY;
+            }
+        }
+        // The main animate() loop will now handle moving the elements smoothly to their targetY.
+    }
+
 
     function updatePlantStatus(plant, time) {
         if (plant.status === 'growing') {
@@ -2066,7 +2155,10 @@
 		const scale = 1.8;
 		
         // Update the golfer's ground position
-        golfer.screenY = landscapeHeightMap[Math.round(golfer.x)] || golfer.screenY;
+        // ## MODIFIED: This is now handled by the main animation loop when an animation is active.
+        if (!golfer.isAnimating) {
+            golfer.screenY = landscapeHeightMap[Math.round(golfer.x)] || golfer.screenY;
+        }
         golfer.animation_timer++;
         
         if (!golfer.skinTone) {
@@ -2270,7 +2362,7 @@
     }
 	
     function updateAndDrawHoleInOne(e) {
-		if (e.life === 239) {
+		if (e.life === 239) { // First frame of the event
 			for (let i = 0; i < 50; i++) {
 				const angle = globalRandom() * Math.PI * 2;
 				const speed = globalRandom() * 3 + 1;
@@ -2282,18 +2374,20 @@
 					color: `hsl(${globalRandom() * 360}, 100%, 70%)`
 				});
 			}
-			// Initialize a flag to ensure the message is only sent once.
 			e.twitchMessageSent = false;
 		}
 	
 		const message = `${e.name} got a Hole in ONE!`;
 	
-		// Check if the life is at the right point AND the message hasn't been sent yet.
 		if (e.life == 237 && !e.twitchMessageSent) {
 			sendTwitchChatMessage(my_user_id, message);
-			// Set the flag to true so this doesn't run again for this event.
 			e.twitchMessageSent = true;
 		}
+
+        // ## MODIFIED: Trigger the landscape reset at the peak of the text animation
+        if (e.life === 120) {
+            resetLandscapeAndAnimateElements();
+        }
 	
 		e.particles.forEach(p => {
 			p.x += p.vx;
@@ -2323,9 +2417,11 @@
 		ctx.globalAlpha = alpha;
 		ctx.fillText(message, 0, 0);
 		ctx.restore();
-		setTimeout(() => {
-			window.location.reload();
-		}, 6000); // A 6 second delay
+		
+        // ## REMOVED: The page reload timeout is no longer needed ##
+		// setTimeout(() => {
+		// 	window.location.reload();
+		// }, 6000); 
 	}
 	
 	function updateAndDrawCreature(creature, time) {
@@ -2342,19 +2438,20 @@
     if (creature.state === 'roaming' || creature.state === 'leaving') {
         creature.x += creature.speed;
 
-        // --- SMOOTH Y-POSITION LOGIC ---
-        const x1 = Math.floor(creature.x);
-        const x2 = x1 + 1;
-        
-        if (x1 >= 0 && x2 < canvas.width) {
-            const y1 = landscapeHeightMap[x1];
-            const y2 = landscapeHeightMap[x2];
-            const fractionalX = creature.x - x1;
+        // ## MODIFIED: This logic is skipped if the element is being animated by the reset function ##
+        if (!creature.isAnimating) {
+            const x1 = Math.floor(creature.x);
+            const x2 = x1 + 1;
             
-            // Linear interpolation for smooth height transition
-            creature.screenY = y1 + (y2 - y1) * fractionalX;
-        } else {
-            creature.screenY = canvas.height * 2;
+            if (x1 >= 0 && x2 < canvas.width) {
+                const y1 = landscapeHeightMap[x1];
+                const y2 = landscapeHeightMap[x2];
+                const fractionalX = creature.x - x1;
+                
+                creature.screenY = y1 + (y2 - y1) * fractionalX;
+            } else {
+                creature.screenY = canvas.height * 2;
+            }
         }
 
         if ((creature.state_timer <= 0 || Math.abs(creature.x - creature.targetX) < 5) && creature.state !== 'leaving') {
