@@ -175,6 +175,8 @@
 							if(`${message.text}` == '!meteor'){startEvent('meteor')}
 							if(`${message.text}` == '!lightning'){startEvent('lightning')}
 							if(`${message.text}` == '!wildfire'){startEvent('forestFire')}
+							if(`${message.text}` == '!hios'){showLeaderboard();}
+							if(`${message.text}` == '!holeouts'){showLeaderboard();}
 							if(`${message.text}` == '!meteorshower'){
 							for (let i = 0; i < 11; i++) {
 							  setTimeout(() => {
@@ -253,7 +255,7 @@
 							if(`${message.text}` == '!miyong'){
 							for (let i = 0; i < 69; i++) {
 							  setTimeout(() => {
-								startEvent('golf', 'C.R.O.');
+								startEvent('golf', 'THE C.R.O.');
 								startEvent('creature');
 							  }, 400 * i); 
 							 }
@@ -845,8 +847,7 @@
         generateLandscape();
         updatePlantListUI();
         animate(0);
-		setInterval(showLeaderboard, 6000); // Show every 10 minutes
-		//setInterval(showLeaderboard, 600000); // Show every 10 minutes
+		setInterval(showLeaderboard, 600000); // Show every 10 minutes
     }
 
     function findNewPlantPosition(plantName) {
@@ -2422,14 +2423,14 @@
 					color: `hsl(${globalRandom() * 360}, 100%, 70%)`
 				});
 			}
-			const currentScore = holeInOneScores.get(e.name) || 0;
-            holeInOneScores.set(e.name, currentScore + 1);
 			e.twitchMessageSent = false;
 		}
 	
 		const message = `${e.name} got a Hole in ONE!`;
 	
 		if (e.life == 237 && !e.twitchMessageSent) {
+			const currentScore = holeInOneScores.get(e.name) || 0;
+            holeInOneScores.set(e.name, currentScore + 1);
 			resetLandscapeAndAnimateElements();
 			sendTwitchChatMessage(my_user_id, message);
 			e.twitchMessageSent = true;
@@ -3030,7 +3031,7 @@
             // Set a timeout to hide it after 8 seconds
             setTimeout(() => {
                 leaderboard.classList.remove('visible');
-            }, 8000); // 8 seconds
+            }, 11000); // 8 seconds
         }
     }
 	
