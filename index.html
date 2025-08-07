@@ -841,7 +841,7 @@
         globalRandom = createSeededRandom(seed);
         setupCanvas();
         generateLandscape();
-        testHoleInOneBtn.addEventListener('click', updateAndDrawHoleInOne);
+        testHoleInOneBtn.addEventListener('click', resetLandscapeAndAnimateElements);
         updatePlantListUI();
         animate(0);
     }
