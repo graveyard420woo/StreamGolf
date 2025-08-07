@@ -2425,12 +2425,9 @@
 		const message = `${e.name} got a Hole in ONE!`;
 	
 		if (e.life == 237 && !e.twitchMessageSent) {
+			resetLandscapeAndAnimateElements();
 			sendTwitchChatMessage(my_user_id, message);
 			e.twitchMessageSent = true;
-		}
-	
-		if (e.life === 120) {
-			resetLandscapeAndAnimateElements();
 		}
 	
 		// --- PART 2: Particle Drawing (Fully Isolated) ---
