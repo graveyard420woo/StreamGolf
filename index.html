@@ -926,13 +926,7 @@
             const progress = Math.min(elapsed / landscapeAnimation.duration, 1);
             const easedProgress = easeInOutCubic(progress);
 
-            // 1. Draw the old landscape as the base layer and fade it out completely.
-            if (previousLandscapeCanvas) {
-                ctx.globalAlpha = 1 - easedProgress; // Fades from 1 to 0
-                ctx.drawImage(previousLandscapeCanvas, 0, 0);
-            }
-
-            // 2. Create the animated clipping path based on the morphing height map.
+            // 1. Create the single, animated clipping path for both landscapes.
             const interpolatedHeightMap = new Array(canvas.width);
             for (let x = 0; x < canvas.width; x++) {
                 const startY = landscapeAnimation.sourceHeightMap[x] || canvas.height;
@@ -949,27 +943,30 @@
             ctx.lineTo(canvas.width, canvas.height);
             ctx.lineTo(0, canvas.height);
             ctx.closePath();
-            ctx.clip();
-            
-            // 3. Inside the morphing clip, draw the new landscape and fade it IN.
-            if (landscapeCanvas) {
-                ctx.globalAlpha = easedProgress; // Fades from 0 to 1
-                ctx.drawImage(landscapeCanvas, 0, 0);
+            ctx.clip(); // Apply the morphing clip
+
+            // 2. Draw the old landscape INSIDE the clip, fading OUT.
+            if (previousLandscapeCanvas) {
+                ctx.globalAlpha = 1 - easedProgress;
+                ctx.drawImage(previousLandscapeCanvas, 0, 0);
             }
             
-            // 4. Restore context, removing the clip and alpha changes.
-            ctx.restore(); 
+            // 3. Draw the new landscape INSIDE the same clip, fading IN.
+            if (landscapeCanvas) {
+                ctx.globalAlpha = easedProgress;
+                ctx.drawImage(landscapeCanvas, 0, 0);
+            }
 
-            // Reset alpha to 1.0 for all subsequent drawing operations in this frame.
-            ctx.globalAlpha = 1;
+            // 4. Restore context, which removes the clip and resets globalAlpha.
+            ctx.restore(); 
 
             // Check if the animation is finished
             if (progress >= 1) {
                 landscapeAnimation.isAnimating = false;
-                previousLandscapeCanvas = null; // Clear the old canvas from memory
+                previousLandscapeCanvas = null;
             }
         } else {
-            // Default behavior when not animating: just draw the current landscape
+            // Default behavior when not animating
             if (landscapeCanvas) {
                 ctx.drawImage(landscapeCanvas, 0, 0);
             }
