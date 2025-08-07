@@ -55,9 +55,6 @@
     </div>
     <canvas id="arboretum-canvas"></canvas>
 
-    <!-- ## TEST BUTTON ## -->
-    <button id="hole-in-one-test-btn">Test Hole-In-One</button>
-
     <div id="plant-list-container">
         <h3>Arboretum</h3>
         <div id="plant-list"></div>
@@ -492,7 +489,6 @@
     const lightningBtn = document.getElementById('lightning-btn');
     const fireBtn = document.getElementById('fire-btn');
     const golfBtn = document.getElementById('golf-btn');
-    const testHoleInOneBtn = document.getElementById('hole-in-one-test-btn');
 
     const activePlants = new Map();
     const activeCreatures = new Set();
@@ -841,7 +837,6 @@
         globalRandom = createSeededRandom(seed);
         setupCanvas();
         generateLandscape();
-        testHoleInOneBtn.addEventListener('click', resetLandscapeAndAnimateElements);
         updatePlantListUI();
         animate(0);
     }
@@ -2460,7 +2455,7 @@
 		ctx.font = '40px "Silkscreen", sans-serif';
 		ctx.textAlign = 'center';
 	
-		// Using RGBA is a good practice as it doesn't touch global state
+		// Using RGBA as it doesn't touch global state
 		ctx.fillStyle = `rgba(35, 31, 32, ${alpha * 0.5})`;
 		ctx.fillText(message, 1, 1);
 		ctx.fillStyle = `rgba(236, 0, 140, ${alpha})`;
