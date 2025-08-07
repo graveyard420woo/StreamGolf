@@ -926,19 +926,41 @@
             const progress = Math.min(elapsed / landscapeAnimation.duration, 1);
             const easedProgress = easeInOutCubic(progress);
 
-            // Draw the old landscape and fade it out (alpha from 1 to 0)
+            // 1. Draw the old landscape as the base layer and fade it out completely.
             if (previousLandscapeCanvas) {
-                ctx.globalAlpha = 1 - easedProgress;
+                ctx.globalAlpha = 1 - easedProgress; // Fades from 1 to 0
                 ctx.drawImage(previousLandscapeCanvas, 0, 0);
             }
 
-            // Draw the new landscape on top and fade it in (alpha from 0 to 1)
+            // 2. Create the animated clipping path based on the morphing height map.
+            const interpolatedHeightMap = new Array(canvas.width);
+            for (let x = 0; x < canvas.width; x++) {
+                const startY = landscapeAnimation.sourceHeightMap[x] || canvas.height;
+                const endY = landscapeAnimation.targetHeightMap[x] || canvas.height;
+                interpolatedHeightMap[x] = startY + (endY - startY) * easedProgress;
+            }
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(0, interpolatedHeightMap[0]);
+            for (let x = 1; x < canvas.width; x++) {
+                ctx.lineTo(x, interpolatedHeightMap[x]);
+            }
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            ctx.clip();
+            
+            // 3. Inside the morphing clip, draw the new landscape and fade it IN.
             if (landscapeCanvas) {
-                ctx.globalAlpha = easedProgress;
+                ctx.globalAlpha = easedProgress; // Fades from 0 to 1
                 ctx.drawImage(landscapeCanvas, 0, 0);
             }
             
-            // Reset alpha to 1.0 for all subsequent drawing operations in this frame
+            // 4. Restore context, removing the clip and alpha changes.
+            ctx.restore(); 
+
+            // Reset alpha to 1.0 for all subsequent drawing operations in this frame.
             ctx.globalAlpha = 1;
 
             // Check if the animation is finished
