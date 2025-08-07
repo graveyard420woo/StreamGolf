@@ -926,44 +926,31 @@
             const progress = Math.min(elapsed / landscapeAnimation.duration, 1);
             const easedProgress = easeInOutCubic(progress);
 
-            // Draw the old landscape first
+            // Draw the old landscape and fade it out (alpha from 1 to 0)
             if (previousLandscapeCanvas) {
+                ctx.globalAlpha = 1 - easedProgress;
                 ctx.drawImage(previousLandscapeCanvas, 0, 0);
             }
 
-            // Create an interpolated height map for the clipping path
-            const interpolatedHeightMap = new Array(canvas.width);
-            for (let x = 0; x < canvas.width; x++) {
-                const startY = landscapeAnimation.sourceHeightMap[x] || canvas.height;
-                const endY = landscapeAnimation.targetHeightMap[x] || canvas.height;
-                interpolatedHeightMap[x] = startY + (endY - startY) * easedProgress;
-            }
-
-            // Create a clipping path and draw the new landscape inside it
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(0, interpolatedHeightMap[0]);
-            for (let x = 1; x < canvas.width; x++) {
-                ctx.lineTo(x, interpolatedHeightMap[x]);
-            }
-            ctx.lineTo(canvas.width, canvas.height);
-            ctx.lineTo(0, canvas.height);
-            ctx.closePath();
-            ctx.clip();
-            
+            // Draw the new landscape on top and fade it in (alpha from 0 to 1)
             if (landscapeCanvas) {
+                ctx.globalAlpha = easedProgress;
                 ctx.drawImage(landscapeCanvas, 0, 0);
             }
             
-            ctx.restore();
+            // Reset alpha to 1.0 for all subsequent drawing operations in this frame
+            ctx.globalAlpha = 1;
 
+            // Check if the animation is finished
             if (progress >= 1) {
                 landscapeAnimation.isAnimating = false;
-                previousLandscapeCanvas = null; // Clear the old canvas reference
+                previousLandscapeCanvas = null; // Clear the old canvas from memory
             }
         } else {
-            // Default behavior when not animating
-            if (landscapeCanvas) ctx.drawImage(landscapeCanvas, 0, 0);
+            // Default behavior when not animating: just draw the current landscape
+            if (landscapeCanvas) {
+                ctx.drawImage(landscapeCanvas, 0, 0);
+            }
         }
 
         updateAndDrawSparkles();
