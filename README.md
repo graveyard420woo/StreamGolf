@@ -14,6 +14,8 @@ https://graveyard420woo.github.io/StreamGolf/
 
   <strong>any chat message</strong> - the chatter's golfer takes one shot.
 
+  <strong>any cheer</strong> - the cheerer's golfer takes one shot for every bit cheered.
+
   <strong>!golf</strong> - your golfer takes ten shots.
 
   <strong>!tree</strong> or <strong>!plant</strong> - grows a tree, sunflower or cactus for the chatter. (one plant per chatter)
