@@ -22,7 +22,7 @@ https://graveyard420woo.github.io/StreamGolf/
 
   <strong>!flag</strong> - shows a little flag where the hole is. (cause sometimes is hard to see)
 
-  <strong>!hios</strong>, <strong>!aces</strong> or <strong>!holeouts</strong> - shows a list of all the aces so far
+  <strong>!hios</strong>, <strong>!aces</strong>, <strong>!holeinones</strong> or <strong>!holeouts</strong> - shows a list of all the aces so far
 
   <strong>!meteor</strong> - spawns a random meteor.
 
