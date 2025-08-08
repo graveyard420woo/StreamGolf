@@ -106,7 +106,7 @@
 		document.getElementById("ui-container").style.display = "none";
 		document.getElementById("extracontrols").style.display = "none";	
 										
-		document.getElementById('authorize').setAttribute('href', 'https://id.twitch.tv/oauth2/authorize?client_id=' + client_id + '&redirect_uri=' + encodeURIComponent(redirect) + '&response_type=token&scope=moderator:read:chatters+moderator:read:followers+user:read:chat+user:write:chat');
+		document.getElementById('authorize').setAttribute('href', 'https://id.twitch.tv/oauth2/authorize?client_id=' + client_id + '&redirect_uri=' + encodeURIComponent(redirect) + '&response_type=token&scope=moderator:read:chatters+moderator:read:followers+user:read:chat+user:write:chat+bits:read');
 
         if (document.location.hash && document.location.hash != '') {
             log('Checking for token');
@@ -164,6 +164,20 @@
                     socket_space.on('session_keepalive', () => {
                         document.getElementById('keepalive').textContent = new Date();
                     });
+					socket_space.on('channel.cheer', ({ metadata, payload }) => {
+    					let { event } = payload;
+    					let { is_anonymous , user_name , bits } = event;		
+							console.log(`${user_name} cheered: ${bits} bits`);
+							for (let i = 0; i < `${bits}`; i++) {
+							  setTimeout(() => {
+								  if(`${is_anonymous}` == true){
+									  startEvent('golf', 'Anonymous');
+								  } else {
+									  startEvent('golf', `${user_name}`);
+								  }
+							  }, 400 * i); 
+							 }
+					});
 					socket_space.on('channel.chat.message', ({ metadata, payload }) => {
     					let { event } = payload;
     					let { chatter_user_name , chatter_user_id , message } = event;		
@@ -439,7 +453,8 @@
             let eventSubTypes = {
 				
 				  'channel.follow': { version: "2", condition: { broadcaster_user_id: user_id, moderator_user_id: user_id } },
-				  'channel.chat.message': { version: "1", condition: { broadcaster_user_id: user_id, user_id: user_id } }
+				  'channel.chat.message': { version: "1", condition: { broadcaster_user_id: user_id, user_id: user_id } },
+				  'channel.cheer': { version: "1", condition: { broadcaster_user_id: user_id } }
 				  /*
 				  'channel.prediction.begin': { version: "1", condition: { broadcaster_user_id: user_id } },
 				  'channel.prediction.progress': { version: "1", condition: { broadcaster_user_id: user_id } },
