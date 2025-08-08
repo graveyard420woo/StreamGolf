@@ -117,7 +117,7 @@ h3 { margin-top: 0.5rem; text-align: center; border-bottom: 1px solid var(--ui-b
 		background-color: rgba(20, 20, 20, 0.85);
 		border-radius: 11px 11px 26px 11px;
 		box-shadow: 0 0 20px rgba(255, 0, 127, 0.25);
-		border-left: 2px solid #ec008c;
+		border-left: 2px solid #EB00A5;
 		margin-top: 7px;
 		padding: 35px;
 		padding-top: 13px;
@@ -313,7 +313,6 @@ input[type="button"], button {
     font-weight: 300;
     display: block;
 	text-shadow: 0 0 8px rgba(255, 0, 127, 0.7);
-	border-bottom: 1px solid rgba(255, 0, 127, 0.5);
 	letter-spacing: 1.2px;
 }
 
