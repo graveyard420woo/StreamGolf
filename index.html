@@ -575,7 +575,7 @@
 		landCtx = landscapeCanvas.getContext('2d');
 	
 		// 2. DEFINE LANDSCAPE PARAMETERS
-		const landscapeHeight = canvas.height / 17;
+		const landscapeHeight = canvas.height / 16;
 		const startY = canvas.height - landscapeHeight;
 		
 		// These create the main, smooth, rolling shape of the landscape
@@ -661,7 +661,7 @@
 		}
 		landCtx.putImageData(imageData, 0, 0);
 	
-		// 6. GOLF HOLE (Original)
+		// 6. GOLF HOLE
 		const holeX = globalRandom() * (canvas.width - 400) + 200;
 		const holeY = landscapeHeightMap[Math.round(holeX)] + 2;
 		golfHole = { x: holeX, y: holeY, radius: 4 };
@@ -677,7 +677,7 @@
 		landCtx.ellipse(holeX, holeY, golfHole.radius + 0.5, golfHole.radius * 0.5 + 0.25, 0, 0, Math.PI * 2);
 		landCtx.stroke();
 	
-		// 7. SPARKLES (Original)
+		// 7. SPARKLES
 		sparkles = [];
 		for (let i = 0; i < 250; i++) {
 			const x = globalRandom() * canvas.width;
@@ -935,7 +935,7 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 		updateTimeAndLighting(time);
 
-        // ## MODIFIED: Handle landscape drawing and animation ##
+        // ## Handle landscape drawing and animation ##
         if (landscapeAnimation.isAnimating) {
             const elapsed = now - landscapeAnimation.startTime;
             const progress = Math.min(elapsed / landscapeAnimation.duration, 1);
@@ -1121,7 +1121,7 @@
         return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     }
 
-    // ## MODIFIED: This function now sets up the animation for the landscape as well. ##
+    // ## This function now sets up the animation for the landscape as well. ##
     function resetLandscapeAndAnimateElements() {
         console.log("Resetting landscape and animating elements.");
         const now = performance.now();
@@ -1604,33 +1604,33 @@
 		{ core: '#0058a5', glow: '#3d86cd', trail: ['#6ba5d8', '#3d86cd', '#0058a5'] },
 		{ core: '#005cad', glow: '#3d8ad4', trail: ['#6ba8dc', '#3d8ad4', '#005cad'] },
 		{ core: '#0060b5', glow: '#3d8fde', trail: ['#6baee6', '#3d8fde', '#0060b5'] },
-		{ core: '#2168c1', glow: '#5395ec', trail: ['#7cacf1', '#5395ec', '#2168c1'] },
-		{ core: '#426ec9', glow: '#6f98f6', trail: ['#92b0f8', '#6f98f6', '#426ec9'] },
-		{ core: '#3f5ea5', glow: '#6e89cd', trail: ['#91a5d8', '#6e89cd', '#3f5ea5'] },
-		{ core: '#4b55a5', glow: '#7881cd', trail: ['#9aa0d8', '#7881cd', '#4b55a5'] },
-		{ core: '#574ca6', glow: '#8379cf', trail: ['#a29bd9', '#8379cf', '#574ca6'] },
-		{ core: '#6344a6', glow: '#8e71cf', trail: ['#ab95d9', '#8e71cf', '#6344a6'] },
-		{ core: '#5f2484', glow: '#8e56b0', trail: ['#ac81c8', '#8e56b0', '#5f2484'] },
-		{ core: '#733791', glow: '#9f64b8', trail: ['#b889ca', '#9f64b8', '#733791'] },
-		{ core: '#88489d', glow: '#b073c1', trail: ['#c695d1', '#b073c1', '#88489d'] },
-		{ core: '#9d59aa', glow: '#c384d0', trail: ['#d4a2da', '#c384d0', '#9d59aa'] },
-		{ core: '#811981', glow: '#ad4eab', trail: ['#c479c3', '#ad4eab', '#811981'] },
-		{ core: '#9a218f', glow: '#c251b6', trail: ['#d279c9', '#c251b6', '#9a218f'] },
-		{ core: '#b32b9e', glow: '#de59c4', trail: ['#e87fd3', '#de59c4', '#b32b9e'] },
-		{ core: '#c332a9', glow: '#f05ecf', trail: ['#f983da', '#f05ecf', '#c332a9'] },
+		{ core: '#a168c1', glow: '#5395ec', trail: ['#7cacf1', '#5395ec', '#2168c1'] },
+		{ core: '#a26ec9', glow: '#6f98f6', trail: ['#92b0f8', '#6f98f6', '#426ec9'] },
+		{ core: '#af5ea5', glow: '#6e89cd', trail: ['#91a5d8', '#6e89cd', '#3f5ea5'] },
+		{ core: '#ab55a5', glow: '#7881cd', trail: ['#9aa0d8', '#7881cd', '#4b55a5'] },
+		{ core: '#a74ca6', glow: '#8379cf', trail: ['#a29bd9', '#8379cf', '#574ca6'] },
+		{ core: '#a344a6', glow: '#8e71cf', trail: ['#ab95d9', '#8e71cf', '#6344a6'] },
+		{ core: '#af2484', glow: '#8e56b0', trail: ['#ac81c8', '#8e56b0', '#5f2484'] },
+		{ core: '#a33791', glow: '#9f64b8', trail: ['#b889ca', '#9f64b8', '#733791'] },
+		{ core: '#a8489d', glow: '#b073c1', trail: ['#c695d1', '#b073c1', '#88489d'] },
+		{ core: '#ad59aa', glow: '#c384d0', trail: ['#d4a2da', '#c384d0', '#9d59aa'] },
+		{ core: '#a11981', glow: '#ad4eab', trail: ['#c479c3', '#ad4eab', '#811981'] },
+		{ core: '#aa218f', glow: '#c251b6', trail: ['#d279c9', '#c251b6', '#9a218f'] },
+		{ core: '#a32b9e', glow: '#de59c4', trail: ['#e87fd3', '#de59c4', '#b32b9e'] },
+		{ core: '#a332a9', glow: '#f05ecf', trail: ['#f983da', '#f05ecf', '#c332a9'] },
 		{ core: '#7c3830', glow: '#a6655e', trail: ['#bb8882', '#a6655e', '#7c3830'] },
-		{ core: '#8d4735', glow: '#b57464', trail: ['#c9968a', '#b57464', '#8d4735'] },
-		{ core: '#9f573b', glow: '#c8826a', trail: ['#d8a18f', '#c8826a', '#9f573b'] },
-		{ core: '#b26841', glow: '#dd936e', trail: ['#e8ad92', '#dd936e', '#b26841'] },
-		{ core: '#704f2f', glow: '#9a7c5d', trail: ['#b29a81', '#9a7c5d', '#704f2f'] },
-		{ core: '#815f33', glow: '#ab8a62', trail: ['#c1a687', '#ab8a62', '#815f33'] },
-		{ core: '#926f37', glow: '#bb9865', trail: ['#cca B8b', '#bb9865', '#926f37'] },
-		{ core: '#a5803c', glow: '#d0a669', trail: ['#dcb98d', '#d0a669', '#a5803c'] },
-		{ core: '#654235', glow: '#927166', trail: ['#b3968d', '#927166', '#654235'] },
-		{ core: '#4d392e', glow: '#7a675d', trail: ['#9a8b83', '#7a675d', '#4d392e'] },
-		{ core: '#513f36', glow: '#7e6c64', trail: ['#9d8e89', '#7e6c64', '#513f36'] },
-		{ core: '#55463e', glow: '#82736b', trail: ['#a1958f', '#82736b', '#55463e'] },
-		{ core: '#594d46', glow: '#867972', trail: ['#a49a94', '#867972', '#594d46'] }
+		{ core: '#fd4735', glow: '#b57464', trail: ['#c9968a', '#b57464', '#8d4735'] },
+		{ core: '#ff573b', glow: '#c8826a', trail: ['#d8a18f', '#c8826a', '#9f573b'] },
+		{ core: '#f26841', glow: '#dd936e', trail: ['#e8ad92', '#dd936e', '#b26841'] },
+		{ core: '#f04f2f', glow: '#9a7c5d', trail: ['#b29a81', '#9a7c5d', '#704f2f'] },
+		{ core: '#f15f33', glow: '#ab8a62', trail: ['#c1a687', '#ab8a62', '#815f33'] },
+		{ core: '#f26f37', glow: '#bb9865', trail: ['#cca B8b', '#bb9865', '#926f37'] },
+		{ core: '#f5803c', glow: '#d0a669', trail: ['#dcb98d', '#d0a669', '#a5803c'] },
+		{ core: '#f54235', glow: '#927166', trail: ['#b3968d', '#927166', '#654235'] },
+		{ core: '#fd392e', glow: '#7a675d', trail: ['#9a8b83', '#7a675d', '#4d392e'] },
+		{ core: '#f13f36', glow: '#7e6c64', trail: ['#9d8e89', '#7e6c64', '#513f36'] },
+		{ core: '#f5463e', glow: '#82736b', trail: ['#a1958f', '#82736b', '#55463e'] },
+		{ core: '#f94d46', glow: '#867972', trail: ['#a49a94', '#867972', '#594d46'] }
 	];
 	
 	function hexToRgbA(hex) {
@@ -2061,9 +2061,8 @@
 				ctx.fill();
 				ctx.stroke();
 				
-				ctx.restore(); // UPDATED: Restore the context, removing the globalAlpha change.
+				ctx.restore(); // Restore the context, removing the globalAlpha change.
 			}
-			// --- END OF UPDATED SECTION ---
 	
 			const progress = 1 - e.life / 60;
 			ctx.fillStyle = `rgba(255, 200, 100, ${1 - progress})`;
@@ -2156,11 +2155,11 @@
         if (!golfHole) return;
 
         // --- Basic Pole and Flag Properties ---
-        const poleHeight = 35;
+        const poleHeight = 85;
         const poleX = golfHole.x;
         const poleTopY = golfHole.y - poleHeight;
-        const flagWidth = 12;
-        const flagHeight = 8;
+        const flagWidth = 16;
+        const flagHeight = 12;
         const totalPixels = flagWidth * flagHeight;
         const now = Date.now();
 
