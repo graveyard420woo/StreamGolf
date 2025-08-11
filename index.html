@@ -290,6 +290,9 @@
 							  }, 600 * i); 
 							 }
 							}
+							if(`${message.text}` == '!streamgolf'){
+							sendTwitchChatMessage(my_user_id, 'Check out the readme for info & a full list of ! commands - https://github.com/graveyard420woo/StreamGolf/blob/main/README.md');
+							}
 					});				
 				})	
                 .catch(err => {
