@@ -47,6 +47,6 @@ https://graveyard420woo.github.io/StreamGolf/
   !cara
   !rabbits
 
-Project researchers & devs: S2Shot, ShadowMario98, Gizar0, Spenny__420, Sandals, CaraMinneee, TheMayorAdam, LadyMiYong, Tangel0, morjanga, SuzanneToad, Derty6969, graveyard420woo
+Project researchers & devs: S2Shot, ShadowMario98, NBH, Gizar0, Spenny__420, Sandals, CaraMinneee, TheMayorAdam, LadyMiYong, Tangel0, morjanga, SuzanneToad, Derty6969, graveyard420woo
 
 
