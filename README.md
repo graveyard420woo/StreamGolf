@@ -16,7 +16,7 @@ https://graveyard420woo.github.io/StreamGolf/
 
   <strong>any cheer</strong> - the cheerer's golfer takes one shot for every bit cheered.
 
-  <strong>!golf</strong> - your golfer takes ten shots.
+  <strong>!golf</strong> - your golfer takes ten shots. (15 second cooldown per chatter)
 
   <strong>!tree</strong> or <strong>!plant</strong> - grows a tree, sunflower or cactus for the chatter. (one plant per chatter)
 
