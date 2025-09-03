@@ -302,7 +302,7 @@
 									// Only log the cooldown message if it hasn't been logged in the last 15 seconds
 									const lastMessageTime = golfCooldownMessageTracker.get(chatter_user_id);
 									if (!lastMessageTime || (now - lastMessageTime > cooldownMillis)) {
-										sendTwitchChatMessage(my_user_id, '!golf command for ${chatter_user_name} is on cooldown..');
+										sendTwitchChatMessage(my_user_id, '!golf command for '+`${chatter_user_name}`+' is on cooldown..');
 										golfCooldownMessageTracker.set(chatter_user_id, now);
 									}
 								}
