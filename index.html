@@ -78,6 +78,9 @@
     	const FLAG_ANIMATE_DURATION = 560; 
 	    const FLAG_VISIBLE_DURATION = 5000; 
 		const holeInOneScores = new Map();
+		const golfCooldowns = new Map();
+		const GOLF_COOLDOWN_SECONDS = 15;
+		const golfCooldownMessageTracker = new Map();
 		
 		const myBigAssDiv = document.getElementById('bigcontainer1');
 		  setTimeout(() => {
@@ -284,12 +287,25 @@
 							}
 							*/
 							if(`${message.text}` == '!golf'){
-							startEvent('creature');
-							for (let i = 0; i < 15; i++) {
-							  setTimeout(() => {
-								startEvent('golf', `${chatter_user_name}`);
-							  }, 600 * i); 
-							 }
+								const now = Date.now();
+								const cooldownMillis = GOLF_COOLDOWN_SECONDS * 1000;
+								const lastUsed = golfCooldowns.get(chatter_user_id);
+								if (!lastUsed || (now - lastUsed > cooldownMillis)) {
+									golfCooldowns.set(chatter_user_id, now); // Update the last used time for the user
+									startEvent('creature');
+									for (let i = 0; i < 15; i++) {
+									  setTimeout(() => {
+										startEvent('golf', `${chatter_user_name}`);
+									  }, 600 * i); 
+									 }
+								} else {
+									// Only log the cooldown message if it hasn't been logged in the last 15 seconds
+									const lastMessageTime = golfCooldownMessageTracker.get(chatter_user_id);
+									if (!lastMessageTime || (now - lastMessageTime > cooldownMillis)) {
+										sendTwitchChatMessage(my_user_id, '!golf command for ${chatter_user_name} is on cooldown..');
+										golfCooldownMessageTracker.set(chatter_user_id, now);
+									}
+								}
 							}
 							if(`${message.text}` == '!streamgolf'){
 							sendTwitchChatMessage(my_user_id, 'StreamGolf info & full list of ! commands - https://github.com/graveyard420woo/StreamGolf/blob/main/README.md');
