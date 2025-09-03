@@ -293,7 +293,7 @@
 								if (!lastUsed || (now - lastUsed > cooldownMillis)) {
 									golfCooldowns.set(chatter_user_id, now); // Update the last used time for the user
 									startEvent('creature');
-									for (let i = 0; i < 15; i++) {
+									for (let i = 0; i < 10; i++) {
 									  setTimeout(() => {
 										startEvent('golf', `${chatter_user_name}`);
 									  }, 600 * i); 
