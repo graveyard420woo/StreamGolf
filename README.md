@@ -13,7 +13,7 @@ https://graveyard420woo.github.io/StreamGolf/
 Simply add it as a browser source by copying the URL from the address bar of the browser window after you connect your twitch!
 
 Once you connect your twitch account, the page will go transparent (this is a success)
-Test the browser source by starting a prediction with more than 2 options on your connected channel (it will pop up in the blank screen)
+Test the browser source by sending a chat in your channel's chat (your golfer will take a shot)
 Copy the URL from that blank browser window and paste it into a new browser source in OBS/StreamLabs/etc.. Easy!
 
 A 1920x1080 browser source works great. 1100px+ x 1100px+ width browser sources work best! The overlay will try to scale and adjust everything to fit it's given width.
