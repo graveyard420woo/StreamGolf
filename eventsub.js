@@ -11,12 +11,30 @@ class initSocket {
         4007: 'Invalid Reconnect'
     }
 
+    silenceHandler = false;
+    silenceTime = 10;
+    lastKeepAlive = Date.now();
+
     constructor(connect) {
         this._events = {};
-
         if (connect) {
             this.connect();
         }
+
+        // Visibility Handler for OBS/Browser throttling
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                const now = Date.now();
+                const diff = (now - this.lastKeepAlive) / 1000;
+                console.log(`[EventSub] Visibility Restored. Last KeepAlive: ${diff}s ago.`);
+
+                // If we haven't heard from Twitch in > (silenceTime + 5) seconds, force reconnect
+                if (diff > (this.silenceTime + 5)) {
+                    console.log('[EventSub] Stale connection detected on wake. Reconnecting...');
+                    this.eventsub.close(); // This triggers the 'close' event which handles reconnect
+                }
+            }
+        });
     }
 
     connect(url, is_reconnect) {
@@ -148,18 +166,31 @@ class initSocket {
         this.eventsub.close();
     }
 
-    silenceHandler = false;
-    silenceTime = 10;// default per docs is 10 so set that as a good default
     silence(keepalive_timeout_seconds) {
         if (keepalive_timeout_seconds) {
             this.silenceTime = keepalive_timeout_seconds;
-            this.silenceTime++;// add a little window as it's too anal
+            this.silenceTime++;
         }
-        clearTimeout(this.silenceHandler);
-        this.silenceHandler = setTimeout(() => {
-            this.emit('session_silenced');// -> self reconnecting
-            this.close();// close it and let it self loop
-        }, (this.silenceTime * 1000));
+
+        this.lastKeepAlive = Date.now();
+
+        // Clear existing check
+        if (this.silenceHandler) clearInterval(this.silenceHandler);
+
+        // Use setInterval instead of setTimeout to robustly check time continuity
+        // (SetTimeout can drift significantly or be suspended)
+        this.silenceHandler = setInterval(() => {
+            const now = Date.now();
+            const diff = (now - this.lastKeepAlive) / 1000;
+
+            if (diff > (this.silenceTime + 1)) {
+                // We are past the allowed silence window
+                console.log(`[EventSub] Silence detected (${diff}s). Reconnecting...`);
+                this.emit('session_silenced');
+                this.eventsub.close();
+                clearInterval(this.silenceHandler);
+            }
+        }, 1000);
     }
 
     on(name, listener) {
@@ -197,8 +228,8 @@ function log(msg) {
         new Date().getMinutes(),
         new Date().getSeconds()
     ]
-    t.forEach((v,i) => {
-        t[i] = v < 10 ? '0'+v : v;
+    t.forEach((v, i) => {
+        t[i] = v < 10 ? '0' + v : v;
     });
     tim.textContent = t.join(':');
 
