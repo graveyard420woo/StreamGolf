@@ -16,6 +16,8 @@ Once you connect your twitch account, the page will go transparent (this is a su
 Test the browser source by sending a chat in your channel's chat (your golfer will take a shot)
 Copy the URL from that blank browser window and paste it into a new browser source in OBS/StreamLabs/etc.. Easy!
 
+Video Tutorial Here: https://www.youtube.com/watch?v=5iHzal2_xto
+
 A 1920x1080 browser source works great. 1100px+ x 1100px+ width browser sources work best! The overlay will try to scale and adjust everything to fit it's given width.
 
 I am a humble artist/tech/streamer. if you would like to suggest edits, please do! I hope you enjoy this game (; this thing is a labor of love lol
