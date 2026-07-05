@@ -145,7 +145,7 @@
                         requestHooks(resp.data[0].id, my_user_id);	
 						setInterval(() => {
 							getStuffNow(my_user_id)
-						}, 12000); // A 12 second chat check delay							
+						}, 3600000); // A 1 hour chat check delay							
                     });
                     socket_space.on('session_keepalive', () => {
                         document.getElementById('keepalive').textContent = new Date();
