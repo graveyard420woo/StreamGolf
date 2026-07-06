@@ -3,7 +3,7 @@
 <h2 style="margin-left: -18px; margin-top: 8px; font-size: 1.08rem;">StreamGolf by graveyard420woo v2.0</h2>
 
 StreamGolf 2.0! Interactive procedural golf for your Twitch chat. The chillest idle game for your stream! if you are not redirected - https://graveyard420woo.com/StreamGolf/ is the new home for StreamGolf 2.0. Old code will always still be available here on the github for reference!
-
+<br><br>
 ---
 
 <img width="739" height="480" alt="sg2" src="https://github.com/user-attachments/assets/2294a49e-b785-49cf-bdcf-d3499c26ae82" />
